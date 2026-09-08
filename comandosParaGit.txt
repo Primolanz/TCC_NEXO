@@ -1,0 +1,20 @@
+COMANDOS DO GIT:
+
+(PARA CRIAR UMA BRANCH)
+git checkout -b feature/nome-da-tarefa
+
+
+(PARA VER AS BRANCHS QUE EXISTEM)
+git branch -a
+
+
+(PARA MUDAR PARA UMA BRANCH - SUA TAREFA)
+git checkout nome-da-branch
+
+
+(ENVIAR AS ALTERAÇÕES PARA O GIT - DEPOIS DE PRONTO - !!!!!APENAS DA PRIMEIRA VEZ!!!!!)
+git push -u origin feature/nome-da-tarefa
+
+
+(ENVIAR AS ALTERAÇÕES PARA O GIT APÓS A PRIMEIRA VEZ)
+git pull origin develop
