@@ -1,4 +1,4 @@
-COMANDOS DO GIT:
+COMANDOS DO GIT PARA NAVEGAR E CRIAR BRANCHS (PRATOS DE PIZZA):
 
 (PARA CRIAR UMA BRANCH)
 git checkout -b feature/nome-da-tarefa
@@ -18,3 +18,15 @@ git push -u origin feature/nome-da-tarefa
 
 (ENVIAR AS ALTERAÇÕES PARA O GIT APÓS A PRIMEIRA VEZ)
 git pull origin develop
+
+
+=--=-=-=-=-
+
+*** O QUE FAZER SEMPRE QUE ABRIR SEU PROJETO? ***
+você precisa sempre atualizar o que tem na branch develop!! Entao você vai:
+- abrir o terminal
+- ir no "v" na direita do "+"
+- clicar em gitBash
+
+- digitar: git pull origin develop
+(isso vai puxar todas informações recentes do nosso projeto!! Depois disso é só mudar para a sua branch - "git checkout feature/sua-branch")
