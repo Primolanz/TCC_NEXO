@@ -12,7 +12,7 @@ git branch -a
 git checkout nome-da-branch
 
 
-(ENVIAR AS ALTERAÇÕES PARA O GIT - DEPOIS DE PRONTO - !!!!!APENAS DA PRIMEIRA VEZ!!!!!)
+(ENVIAR AS ALTERAÇÕES PARA O GIT - DEPOIS DE PRONTO - !!!!!APENAS DA PRIMEIRA VEZ!!!!!) - (NA SEGUNDA VEZ EM DIANTE USA: git push origin feature/nome-da-tarefa)
 git push -u origin feature/nome-da-tarefa
 
 
