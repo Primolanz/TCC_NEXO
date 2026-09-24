@@ -9,21 +9,11 @@
 .logo-cabecalho, .logo-inicial {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  color: #9d4cff;
-  font-size: 24px;
-  font-weight: 900;
-  letter-spacing: -2px;
 }
 
-.logo-cabecalho-destaque, .logo-inicial-destaque {
-  display: grid;
-  width: 31px;
-  height: 24px;
-  place-items: center;
-  color: #130220;
-  background: #8a42f3;
-  clip-path: polygon(15% 0, 100% 0, 85% 100%, 0 100%);
+.imagem-logo-cabecalho {
+  width: 115px;
+  height: auto;
 }
 
 .nome-pagina-cabecalho {
@@ -35,6 +25,6 @@
 
 @media (max-width: 420px) {
   .cabecalho-pagina { min-height: 62px; padding: 12px 20px; }
-  .logo-cabecalho { font-size: 20px; }
+  .imagem-logo-cabecalho { width: 90px; }
   .nome-pagina-cabecalho { font-size: 15px; }
 }

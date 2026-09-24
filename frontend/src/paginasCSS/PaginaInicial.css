@@ -24,6 +24,11 @@
   padding: 14px clamp(24px, 8vw, 76px);
 }
 
+.imagem-logo-inicial {
+  width: 150px;
+  height: auto;
+}
+
 .botao-login-inicial {
   display: inline-flex;
   align-items: center;
@@ -101,34 +106,19 @@
   position: absolute;
   top: 50%;
   right: clamp(42px, 16vw, 220px);
-  display: flex;
-  align-items: center;
-  color: rgba(123, 70, 190, 0.42);
   transform: translateY(-50%);
 }
 
-.simbolo-decorativo-nexo span:first-child {
-  font-size: clamp(9rem, 18vw, 17rem);
-  font-weight: 900;
-  letter-spacing: -22px;
-}
-
-.simbolo-decorativo-nexo span:last-child {
-  display: grid;
+.imagem-logo-decorativa {
+  display: block;
   width: clamp(230px, 34vw, 510px);
-  aspect-ratio: 1.48;
-  place-items: center;
-  margin-left: -14px;
-  color: #050207;
-  background: linear-gradient(135deg, #2a104e, #6d27d2);
-  clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%);
-  font-size: clamp(9rem, 18vw, 17rem);
-  font-weight: 900;
+  height: auto;
 }
 
 @media (max-width: 768px) {
   .cabecalho-inicial { padding: 16px 24px; }
   .secao-apresentacao { grid-template-columns: 1fr; padding: 65px 24px 46px; }
   .simbolo-decorativo-nexo { position: relative; top: auto; right: auto; justify-self: end; margin-top: 64px; transform: none; }
-  .simbolo-decorativo-nexo span:last-child { width: min(70vw, 320px); }
+  .imagem-logo-inicial { width: 115px; }
+  .imagem-logo-decorativa { width: min(70vw, 320px); }
 }

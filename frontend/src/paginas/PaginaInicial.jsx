@@ -6,7 +6,7 @@ function PaginaInicial() {
     <main className="pagina-inicial">
       <header className="cabecalho-inicial">
         <Link className="logo-inicial" to="/" aria-label="NEXO: página inicial">
-          <span>N</span><span className="logo-inicial-destaque">X</span>
+          <img className="imagem-logo-inicial" src="/NEXO_LOGO.png" alt="NEXO" />
         </Link>
         <Link className="botao-login-inicial" to="/login">Login</Link>
       </header>
@@ -24,7 +24,9 @@ function PaginaInicial() {
             <span>Criar sua conta</span><span aria-hidden="true">→</span>
           </Link>
         </div>
-        <div className="simbolo-decorativo-nexo" aria-hidden="true"><span>N</span><span>X</span></div>
+        <div className="simbolo-decorativo-nexo" aria-hidden="true">
+          <img className="imagem-logo-decorativa" src="/NEXO_GIF.gif" alt="" />
+        </div>
       </section>
     </main>
   )
