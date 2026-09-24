@@ -7,6 +7,8 @@ const supabase = require('../config/supabase'); // Importante!
 router.post('/register', userController.registerUser);
 router.post('/login', userController.loginUser);
 
+router.put('/onboarding', authMiddleware, userController.updateOnboarding);
+
 // Rota protegida: retorna os dados do usuário autenticado
 router.get('/me', authMiddleware, async (req, res) => {
   try {

@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 require('dotenv').config();
 
 // 1. Importação das Rotas
@@ -16,6 +17,9 @@ app.use(express.json());
 // 4. Registro das Rotas da API
 app.use('/api/users', userRoutes);
 app.use('/api/diagnostics', diagnosticFormsRoutes);
+
+// dashboard
+app.use('/api/dashboard', dashboardRoutes);
 
 // 5. Inicialização do Servidor
 const PORT = process.env.PORT || 3000;
