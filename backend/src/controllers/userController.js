@@ -85,3 +85,36 @@ exports.loginUser = async (req, res) => {
     return res.status(500).json({ error: 'Erro interno ao realizar login.' });
   }
 };
+
+// Atualizar perfil do Onboarding (Idade, Ocupação e Objetivos)
+exports.updateOnboarding = async (req, res) => {
+  try {
+    const userId = req.user.id; // Obtido do authMiddleware
+    const { age_group, occupation, main_goal } = req.body;
+
+    if (!age_group || !occupation || !main_goal) {
+      return res.status(400).json({ error: 'Preencha todos os campos do onboarding.' });
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        age_group,
+        occupation,
+        main_goal,
+        updated_at: new Date()
+      })
+      .eq('id', userId)
+      .select('id, name, email, role, plan, age_group, occupation, main_goal')
+      .single();
+
+    if (error) throw error;
+
+    return res.status(200).json({
+      message: 'Dados do onboarding salvos com sucesso!',
+      user: data
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
