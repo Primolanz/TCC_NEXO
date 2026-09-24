@@ -1,0 +1,48 @@
+# NEXO - GUIA DE ORIENTAÇÃO DO BACK-END
+
+## 📂 1. Estrutura de Arquivos (/backend)
+
+backend/
+├── src/
+│   ├── config/        # Conexões com serviços (supabase.js, etc.)
+│   ├── controllers/   # Regras de requisição HTTP e respostas
+│   ├── models/        # Manipulação e schemas do banco de dados
+│   ├── routes/        # Mapeamento dos endpoints (/api/users/register, etc.)
+│   ├── middlewares/   # Proteção de rotas (validação JWT, role e plan)
+│   └── services/      # Regras de negócio complexas (integração IA Gemini)
+├── .env               # Variáveis de ambiente (SUPABASE_URL, GEMINI_API_KEY)
+├── .env.example       # Exemplo sem chaves reais
+└── app.js             # Servidor principal Express
+
+---
+
+## 🚀 2. Prioridades de Desenvolvimento
+
+### 🟢 Prioridade 1 (Atual): Infraestrutura e Autenticação
+- [x] Configuração da conexão com Supabase (`@supabase/supabase-js`).
+- [ ] Cadastro (`POST /api/users/register`): Sincroniza Supabase Auth com tabela pública `users` (`role` e `plan`).
+- [ ] Login e Sessão (`POST /api/auth/login`).
+- [ ] Middlewares: Proteção de rotas privadas e verificação do perfil do usuário.
+
+### 🟡 Prioridade 2: Fluxo do Aluno (Diagnóstico Inicial)
+- [ ] Listagem das 12 questões base (Língua Portuguesa e Matemática).
+- [ ] Registro e cálculo do resultado do teste inicial do estudante.
+
+### 🔵 Prioridade 3: Gestão de Turmas (Visão do Professor - B2B2C)
+- [ ] Criação de turmas com código único (`class_code`).
+- [ ] Vinculação do aluno da conta FREE à turma do professor.
+
+### 🟣 Prioridade 4: Trilhas de Estudo com IA (Plano PREMIUM - B2C)
+- [ ] Middleware de bloqueio/restrição para contas FREE.
+- [ ] Integração com SDK da Gemini (`gemini-2.5-flash`) via `GEMINI_API_KEY`.
+- [ ] Geração do JSON de etapas de estudo personalizadas baseadas nos erros do aluno.
+
+---
+
+## 🌿 3. Orientações de Git Workflow
+
+1. Trabalhar exclusivamente na branch local: `feature/api-usuarios`
+2. Manter a branch `develop` intocada durante a codificação.
+3. Após finalizar e testar o fluxo de usuários/login, subir as alterações:
+   git push origin feature/api-usuarios
+4. Abrir o Pull Request (PR) no GitHub direcionado para a branch `develop`.
