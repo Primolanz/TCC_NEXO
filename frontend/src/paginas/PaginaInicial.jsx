@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import imagemLogoNexo from '../assets/NEXO_LOGO-sem-fundo.png'
+import gifLogoNexo from '../assets/NEXO_GIF.gif'
 import '../paginasCSS/PaginaInicial.css'
 
 function PaginaInicial() {
@@ -6,7 +8,7 @@ function PaginaInicial() {
     <main className="pagina-inicial">
       <header className="cabecalho-inicial">
         <Link className="logo-inicial" to="/" aria-label="NEXO: página inicial">
-          <img className="imagem-logo-inicial" src="/NEXO_LOGO.png" alt="NEXO" />
+          <img className="imagem-logo-inicial" src={imagemLogoNexo} alt="NEXO" />
         </Link>
         <Link className="botao-login-inicial" to="/login">Login</Link>
       </header>
@@ -25,7 +27,7 @@ function PaginaInicial() {
           </Link>
         </div>
         <div className="simbolo-decorativo-nexo" aria-hidden="true">
-          <img className="imagem-logo-decorativa" src="/NEXO_GIF.gif" alt="" />
+          <img className="imagem-logo-decorativa" src={gifLogoNexo} alt="" />
         </div>
       </section>
     </main>

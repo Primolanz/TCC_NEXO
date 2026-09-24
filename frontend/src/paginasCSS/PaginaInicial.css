@@ -10,14 +10,16 @@
 .pagina-inicial::before {
   position: absolute;
   inset: 0 auto 0 0;
-  z-index: -1;
-  width: min(45%, 600px);
+  z-index: 0;
+  width: min(48%, 680px);
   content: '';
   pointer-events: none;
-  background: radial-gradient(circle at 85% 82%, rgba(117, 47, 230, 0.3), rgba(76, 24, 150, 0.1) 35%, transparent 70%);
+  background: radial-gradient(circle at 80% 78%, rgba(117, 47, 230, 0.28), rgba(76, 24, 150, 0.12) 36%, transparent 72%);
 }
 
 .cabecalho-inicial {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -46,6 +48,7 @@
 
 .secao-apresentacao {
   position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: start;
@@ -106,6 +109,7 @@
   position: absolute;
   top: 50%;
   right: clamp(42px, 16vw, 220px);
+  background: #000000;
   transform: translateY(-50%);
 }
 
