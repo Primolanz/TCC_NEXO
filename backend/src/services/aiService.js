@@ -4,11 +4,21 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 exports.generateStudyPlan = async (studentData) => {
   try {
-    // 1. Consulta dinâmica para pegar o primeiro modelo ativo disponível na sua conta
-    const modelsList = await groq.models.list();
-    const activeModel = modelsList.data?.[0]?.id || 'openai/gpt-oss-20b';
+    // 1. Lista dos modelos de produção ativos da Groq em ordem de preferência
+    const preferredModels = [
+      'llama-3.1-8b-instant',
+      'llama-3.3-70b-versatile',
+      'openai/gpt-oss-20b'
+    ];
 
-    console.log(`[Groq AI] Usando o modelo ativo: ${activeModel}`);
+    // 2. Busca modelos disponíveis na conta
+    const modelsList = await groq.models.list();
+    const availableIds = modelsList.data.map(m => m.id);
+
+    // 3. Escolhe o primeiro da lista de preferência que existe na conta
+    const selectedModel = preferredModels.find(m => availableIds.includes(m)) || 'llama-3.1-8b-instant';
+
+    console.log(`[Groq AI] Modelo selecionado para uso: ${selectedModel}`);
 
     const prompt = `
     Você é o assistente virtual pedagógico da plataforma de estudos "Nexo".
@@ -42,7 +52,6 @@ exports.generateStudyPlan = async (studentData) => {
     }
     `;
 
-    // 2. Chamada usando o modelo dinâmico capturado
     const chatCompletion = await groq.chat.completions.create({
       messages: [
         {
@@ -54,7 +63,7 @@ exports.generateStudyPlan = async (studentData) => {
           content: prompt
         }
       ],
-      model: activeModel,
+      model: selectedModel,
       response_format: { type: 'json_object' }
     });
 
