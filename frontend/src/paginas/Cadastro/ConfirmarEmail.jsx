@@ -8,7 +8,7 @@ function ConfirmarEmail({ tipoUsuario = 'aluno' }) {
   const navegar = useNavigate()
   const destino = tipoUsuario === 'professor'
     ? '/cadastro/professor/aguardando-aprovacao'
-    : '/login'
+    : '/onboarding/escolher-plano'
 
   return (
     <main className="pagina-login">

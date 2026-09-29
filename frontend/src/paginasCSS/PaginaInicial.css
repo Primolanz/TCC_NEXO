@@ -14,7 +14,7 @@
   width: min(48%, 680px);
   content: '';
   pointer-events: none;
-  background: radial-gradient(circle at 80% 78%, rgba(117, 47, 230, 0.28), rgba(76, 24, 150, 0.12) 36%, transparent 72%);
+  background: black
 }
 
 .cabecalho-inicial {

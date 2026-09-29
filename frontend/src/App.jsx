@@ -7,6 +7,12 @@ import CadastroAluno from './paginas/Cadastro/CadastroAluno.jsx'
 import CadastroProfessor from './paginas/Cadastro/CadastroProfessor.jsx'
 import ConfirmarEmail from './paginas/Cadastro/ConfirmarEmail.jsx'
 import AguardandoAprovacaoProfessor from './paginas/Cadastro/AguardandoAprovacaoProfessor.jsx'
+import EscolherPlano from './paginas/OnboardingAluno/EscolherPlano.jsx'
+import CheckoutPlano from './paginas/OnboardingAluno/CheckoutPlano.jsx'
+import SobreVoceAluno from './paginas/OnboardingAluno/SobreVoceAluno.jsx'
+import ObjetivosAluno from './paginas/OnboardingAluno/ObjetivosAluno.jsx'
+import ProvaInicialAluno from './paginas/OnboardingAluno/ProvaInicialAluno.jsx'
+import ProvaDiagnostica from './paginas/AvaliacaoDiagnostica/ProvaDiagnostica.jsx'
 
 function App() {
   return (
@@ -15,12 +21,22 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/login/professor" element={<LoginProfessor />} />
       <Route path="/login/administrador" element={<LoginAdministrador />} />
+
       <Route path="/cadastro/aluno" element={<CadastroAluno />} />
       <Route path="/cadastro/professor" element={<CadastroProfessor />} />
       <Route path="/cadastro/aluno/confirmar-email" element={<ConfirmarEmail tipoUsuario="aluno" />} />
       <Route path="/cadastro/professor/confirmar-email" element={<ConfirmarEmail tipoUsuario="professor" />} />
       <Route path="/cadastro/professor/aguardando-aprovacao" element={<AguardandoAprovacaoProfessor />} />
       <Route path="*" element={<Navigate to="/" replace />} />
+
+      <Route path="/onboarding/escolher-plano" element={<EscolherPlano />} />
+      <Route path="/onboarding/checkout" element={<CheckoutPlano />} />
+      <Route path="/onboarding/aluno" element={<SobreVoceAluno />} />
+      <Route path="/onboarding/aluno/objetivos" element={<ObjetivosAluno />} />
+      <Route path="/onboarding/aluno/prova-inicial" element={<ProvaInicialAluno />} />
+
+      <Route path="/avaliacao/diagnostica" element={<ProvaDiagnostica />} />
+
     </Routes>
   )
 }

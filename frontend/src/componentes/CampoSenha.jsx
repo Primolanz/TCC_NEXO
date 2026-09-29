@@ -35,7 +35,18 @@ function CampoSenha({
           aria-label={senhaVisivel ? 'Ocultar senha' : 'Mostrar senha'}
           aria-pressed={senhaVisivel}
         >
-          {senhaVisivel ? '◉' : '◌'}
+          {senhaVisivel ? (
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+              <circle cx="12" cy="12" r="3" />
+              <path d="M4 4 20 20" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          )}
         </button>
       </div>
       {temErro && <p id={`${id}-erro`} className="mensagem-erro-campo">{mensagemErro}</p>}

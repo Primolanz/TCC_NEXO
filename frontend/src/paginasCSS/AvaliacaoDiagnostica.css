@@ -1,0 +1,194 @@
+.pagina-prova-diagnostica {
+  min-height: 100vh;
+  color: #ffffff;
+  background:
+    radial-gradient(
+      circle at 8% 10%,
+      rgba(94, 34, 183, 0.24),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 92% 90%,
+      rgba(80, 25, 170, 0.16),
+      transparent 38%
+    ),
+    #030304;
+}
+
+.conteudo-prova-diagnostica {
+  width: min(100%, 960px);
+  margin: 0 auto;
+  padding: 62px 24px 40px;
+}
+
+.progresso-prova {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr) auto;
+  align-items: end;
+  gap: 18px;
+  max-width: 650px;
+  margin: 0 auto 30px;
+  color: #994fff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.area-barra-progresso {
+  display: grid;
+  gap: 7px;
+}
+
+.titulo-progresso-prova {
+  color: #a6a1aa;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.barra-progresso-prova {
+  width: 100%;
+  height: 18px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #3c3b3e;
+}
+
+.preenchimento-progresso-prova {
+  height: 100%;
+  border-radius: inherit;
+  background: #8033e9;
+  transition: width 0.25s ease;
+}
+
+.cartao-questao-diagnostica {
+  min-height: 440px;
+  padding: 24px clamp(28px, 7vw, 64px) 66px;
+  border: 2px solid #8338ed;
+  border-radius: 28px;
+  background: #030304;
+}
+
+.cabecalho-questao-diagnostica {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.cabecalho-questao-diagnostica h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(1.55rem, 3vw, 2rem);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.cabecalho-questao-diagnostica span {
+  color: #994fff;
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.enunciado-questao {
+  margin: 68px 0 46px;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.alternativas-questao {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 46px clamp(28px, 14vw, 145px);
+}
+
+.alternativa-questao {
+  min-height: 52px;
+  padding: 12px 18px;
+  border: 1px solid #7833d8;
+  border-radius: 7px;
+  color: #ffffff;
+  background:
+    radial-gradient(
+      circle at 50% 120%,
+      rgba(96, 30, 202, 0.26),
+      transparent 74%
+    ),
+    #121014;
+  font-size: 16px;
+  font-weight: 700;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.alternativa-questao:hover {
+  border-color: #a75fff;
+  transform: translateY(-2px);
+}
+
+.alternativa-questao-selecionada {
+  border-color: #b16bff;
+  background: #4c168f;
+  box-shadow: 0 0 0 1px #b16bff;
+}
+
+.botao-proxima-questao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 174px;
+  min-height: 48px;
+  margin: 32px 0 0 auto;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 12px;
+  color: #ffffff;
+  background: #8033e9;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.botao-proxima-questao:hover {
+  background: #934cf4;
+}
+
+.botao-proxima-questao:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@media (max-width: 640px) {
+  .conteudo-prova-diagnostica {
+    padding: 38px 16px;
+  }
+
+  .progresso-prova {
+    gap: 10px;
+    font-size: 14px;
+  }
+
+  .cartao-questao-diagnostica {
+    min-height: auto;
+    padding: 24px 20px 36px;
+    border-radius: 18px;
+  }
+
+  .enunciado-questao {
+    margin: 46px 0 34px;
+    font-size: 16px;
+  }
+
+  .alternativas-questao {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .botao-proxima-questao {
+    width: 100%;
+    margin-top: 24px;
+  }
+}
