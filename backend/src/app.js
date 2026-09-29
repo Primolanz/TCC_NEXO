@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const studyPlanRoutes = require('./routes/studyPlanRoutes');
 require('dotenv').config();
 
 // 1. Importação das Rotas
@@ -12,6 +13,7 @@ const app = express();
 // 3. Middlewares Globais
 app.use(cors());
 app.use(express.json());
+app.use('/api/study-plans', studyPlanRoutes);
 
 // 4. Registro das Rotas da API
 app.use('/api/users', userRoutes);
