@@ -1,0 +1,30 @@
+.cabecalho-pagina {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 82px;
+  padding: 14px clamp(24px, 6vw, 76px);
+}
+
+.logo-cabecalho, .logo-inicial {
+  display: inline-flex;
+  align-items: center;
+}
+
+.imagem-logo-cabecalho {
+  width: 115px;
+  height: auto;
+}
+
+.nome-pagina-cabecalho {
+  margin: 0;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+@media (max-width: 420px) {
+  .cabecalho-pagina { min-height: 62px; padding: 12px 20px; }
+  .imagem-logo-cabecalho { width: 90px; }
+  .nome-pagina-cabecalho { font-size: 15px; }
+}

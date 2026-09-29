@@ -1,0 +1,138 @@
+.pagina-login {
+  min-height: 100vh;
+  color: #ffffff;
+  background: radial-gradient(circle at 8% 6%, rgba(94, 34, 183, 0.22), transparent 32%), radial-gradient(circle at 96% 95%, rgba(61, 20, 124, 0.16), transparent 36%), #030304;
+}
+
+.conteudo-central-login {
+  display: grid;
+  min-height: calc(100vh - 82px);
+  padding: 24px;
+  place-items: center;
+}
+
+.cartao-login {
+  width: min(100%, 460px);
+  padding: 30px 32px 28px;
+  border-radius: 18px;
+  background: #2d2d2d;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+}
+
+.titulo-login { margin: 0; color: #ffffff; text-align: center; font-size: 24px; font-weight: 700; }
+.descricao-login { margin: 8px 0 20px; color: #c4c4c4; text-align: center; font-size: 13px; line-height: 1.4; }
+
+.seletor-perfil {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-bottom: 18px;
+  padding: 4px;
+  border-radius: 8px;
+  background: #050505;
+}
+
+.seletor-perfil-cadastro { grid-template-columns: repeat(2, 1fr); }
+
+.opcao-perfil {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  border-radius: 5px;
+  color: #c9c9c9;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.opcao-perfil:hover { background: rgba(128, 51, 233, 0.18); }
+.opcao-perfil-ativa { color: #ffffff; background: #8033e9; }
+
+.formulario-login { display: grid; gap: 16px; }
+.grupo-campo { display: grid; gap: 7px; }
+.rotulo-campo { color: #cfcfcf; font-size: 11px; font-weight: 700; }
+
+.campo-login {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  outline: none;
+  color: #ffffff;
+  background: #050505;
+  font-size: 14px;
+}
+
+.campo-login::placeholder { color: #848484; }
+.campo-login:focus { border-color: #8033e9; }
+.campo-login-erro, .campo-login-erro:focus { border-color: #e05a5a; }
+.mensagem-erro-campo { margin: -2px 0 0; color: #f07a7a; font-size: 12px; line-height: 1.3; }
+
+.area-campo-senha { position: relative; }
+.area-campo-senha .campo-login { padding-right: 48px; }
+.botao-mostrar-senha {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  color: #bcbcbc;
+  background: transparent;
+  font-size: 21px;
+  transform: translateY(-50%);
+}
+.botao-mostrar-senha:hover { color: #ffffff; background: rgba(128, 51, 233, 0.18); }
+
+.botao-mostrar-senha svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.botao-entrar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 9px;
+  color: #ffffff;
+  background: #8033e9;
+  font-size: 15px;
+  font-weight: 700;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.botao-entrar:hover { background: #934cf4; transform: translateY(-1px); }
+.botao-entrar:disabled { cursor: not-allowed; opacity: 0.45; }
+.botao-entrar:disabled:hover { background: #8033e9; transform: none; }
+.botao-entrar-link { text-decoration: none; }
+
+.rodape-login { margin: 22px 0 0; padding-top: 18px; border-top: 1px solid #5c5c5c; color: #e0e0e0; text-align: center; font-size: 12px; }
+.link-cadastro { margin-left: 4px; color: #9b53ff; }
+.link-cadastro:hover { text-decoration: underline; }
+
+.caixa-confirmacao-email, .caixa-status-aprovacao { margin: 26px 0; padding: 18px; border: 1px solid #4b4b4b; border-radius: 10px; background: #252525; }
+.caixa-confirmacao-email { display: grid; gap: 16px; }
+.mensagem-confirmacao-email, .caixa-status-aprovacao p { margin: 0; color: #d0d0d0; text-align: center; font-size: 13px; line-height: 1.45; }
+.rotulo-confirmacao-email { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 42px; padding: 0 12px; border-radius: 8px; color: #ffffff; background: #050505; font-size: 13px; font-weight: 600; cursor: pointer; }
+.rotulo-confirmacao-email input { width: 16px; height: 16px; margin: 0; accent-color: #8033e9; }
+
+.icone-status-aprovacao { display: grid; width: 58px; height: 58px; margin: 0 auto 18px; place-items: center; border-radius: 50%; color: #b780ff; background: rgba(128, 51, 233, 0.16); font-size: 31px; }
+
+@media (max-width: 420px) {
+  .conteudo-central-login { min-height: calc(100vh - 62px); padding: 16px; }
+  .cartao-login { padding: 20px 18px; }
+  .opcao-perfil { font-size: 10px; }
+}
