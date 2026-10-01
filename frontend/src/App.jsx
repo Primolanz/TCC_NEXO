@@ -27,7 +27,6 @@ function App() {
       <Route path="/cadastro/aluno/confirmar-email" element={<ConfirmarEmail tipoUsuario="aluno" />} />
       <Route path="/cadastro/professor/confirmar-email" element={<ConfirmarEmail tipoUsuario="professor" />} />
       <Route path="/cadastro/professor/aguardando-aprovacao" element={<AguardandoAprovacaoProfessor />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
 
       <Route path="/onboarding/escolher-plano" element={<EscolherPlano />} />
       <Route path="/onboarding/checkout" element={<CheckoutPlano />} />
@@ -37,6 +36,7 @@ function App() {
 
       <Route path="/avaliacao/diagnostica" element={<ProvaDiagnostica />} />
 
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
