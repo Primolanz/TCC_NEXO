@@ -1,30 +1,52 @@
 import { useState } from 'react'
+import { questoesDiagnosticas } from '../../dados/questoesDiagnosticas.js'
 import '../../paginasCSS/AvaliacaoDiagnostica.css'
 
 function ProvaDiagnostica() {
-  const [respostaSelecionada, definirRespostaSelecionada] = useState('')
+    const [indiceQuestaoAtual, definirIndiceQuestaoAtual] = useState(0)
+    const [respostasSelecionadas, definirRespostasSelecionadas] = useState({})
 
-  const questao = {
-    numero: 1,
-    totalQuestoes: 20,
-    materia: 'Português',
-    enunciado: 'Qual palavra está escrita corretamente?',
-    alternativas: [
-      { id: 'a', texto: 'A) Exessão' },
-      { id: 'b', texto: 'B) Exceção' },
-      { id: 'c', texto: 'C) Excessão' },
-      { id: 'd', texto: 'D) Eseção' },
-    ],
-  }
+    const questao = questoesDiagnosticas[indiceQuestaoAtual]
 
-  const progresso = (questao.numero / questao.totalQuestoes) * 100
+    const respostaSelecionada = respostasSelecionadas[questao.id] ?? ''
+
+    const progresso = Math.round(
+      ((indiceQuestaoAtual + 1) / questoesDiagnosticas.length) * 100
+    )
+
+    function selecionarResposta(idAlternativa) {
+      definirRespostasSelecionadas((respostasAnteriores) => ({
+        ...respostasAnteriores,
+        [questao.id]: idAlternativa,
+      }))
+    }
+
+    function avancarQuestao() {
+      const ultimaQuestao =
+        indiceQuestaoAtual === questoesDiagnosticas.length - 1
+
+      if (!respostaSelecionada || ultimaQuestao) {
+        return
+      }
+
+      definirIndiceQuestaoAtual((indiceAnterior) => indiceAnterior + 1)
+    }
+
+    function voltarQuestao() {
+      if (indiceQuestaoAtual === 0) {
+        return
+      }
+
+      definirIndiceQuestaoAtual((indiceAnterior) => indiceAnterior - 1)
+    }
+
 
   return (
     <main className="pagina-prova-diagnostica">
       <section className="conteudo-prova-diagnostica">
         <div className="progresso-prova">
           <span>
-            {questao.numero}/{questao.totalQuestoes}
+            {questao.id}/{questoesDiagnosticas.length}
           </span>
 
           <div className="area-barra-progresso">
@@ -46,7 +68,7 @@ function ProvaDiagnostica() {
 
         <section className="cartao-questao-diagnostica">
           <header className="cabecalho-questao-diagnostica">
-            <h1>Questão {questao.numero}</h1>
+            <h1>Questão {questao.id}</h1>
             <span>{questao.materia}</span>
           </header>
 
@@ -64,7 +86,7 @@ function ProvaDiagnostica() {
                     ? 'alternativa-questao-selecionada'
                     : ''
                 }`}
-                onClick={() => definirRespostaSelecionada(alternativa.id)}
+                onClick={() => selecionarResposta(alternativa.id)}
               >
                 {alternativa.texto}
               </button>
@@ -72,13 +94,25 @@ function ProvaDiagnostica() {
           </div>
         </section>
 
-        <button
-          type="button"
-          className="botao-proxima-questao"
-          disabled={!respostaSelecionada}
-        >
-          Próxima questão →
-        </button>
+        <div className="navegacao-questoes">
+          <button
+            type="button"
+            className="botao-voltar-questao"
+            onClick={voltarQuestao}
+            disabled={indiceQuestaoAtual === 0}
+          >
+            ← Voltar
+          </button>
+
+          <button
+            type="button"
+            className="botao-proxima-questao"
+            onClick={avancarQuestao}
+            disabled={!respostaSelecionada}
+          >
+            Próxima questão →
+          </button>
+        </div>
       </section>
     </main>
   )
