@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import CampoSenha from './CampoSenha.jsx'
 import CabecalhoPagina from './CabecalhoPagina.jsx'
 import '../paginasCSS/Login.css'
@@ -10,7 +11,53 @@ const caminhosPorPerfil = {
 }
 
 function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
-  function impedirEnvioFormulario(evento) { evento.preventDefault() }
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [erro, setErro] = useState('')
+  const [carregando, setCarregando] = useState(false)
+
+  const navigate = useNavigate()
+
+  async function manipularSubmissao(evento) {
+    evento.preventDefault()
+    setErro('')
+    setCarregando(true)
+
+    try {
+      // 1. Chamada para a API Node.js
+      const resposta = await fetch('http://localhost:3000/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const dados = await resposta.json()
+
+      if (!resposta.ok) {
+        throw new Error(dados.message || dados.error || 'Falha ao realizar login.')
+      }
+
+      // 2. Salvar o Token JWT no localStorage
+      if (dados.token) {
+        localStorage.setItem('nexo_token', dados.token)
+        localStorage.setItem('nexo_user', JSON.stringify(dados.user || {}))
+      }
+
+      // 3. Redirecionamento após o login
+      if (perfilAtivo === 'aluno') {
+        navigate('/onboarding/aluno')
+      } else {
+        navigate('/')
+      }
+
+    } catch (err) {
+      setErro(err.message)
+    } finally {
+      setCarregando(false)
+    }
+  }
 
   return (
     <main className="pagina-login">
@@ -32,13 +79,37 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
             ))}
           </nav>
 
-          <form className="formulario-login" onSubmit={impedirEnvioFormulario}>
+          {/* Exibição de mensagem de erro caso o login falhe */}
+          {erro && (
+            <div style={{ color: '#ef4444', backgroundColor: '#fee2e2', padding: '10px', borderRadius: '6px', marginBottom: '15px', fontSize: '14px', textAlign: 'center' }}>
+              {erro}
+            </div>
+          )}
+
+          <form className="formulario-login" onSubmit={manipularSubmissao}>
             <div className="grupo-campo">
               <label className="rotulo-campo" htmlFor={`email-${perfilAtivo}`}>E-MAIL EDUCACIONAL/PESSOAL</label>
-              <input className="campo-login" id={`email-${perfilAtivo}`} name="email" type="email" placeholder={emailExemplo} required />
+              <input
+                className="campo-login"
+                id={`email-${perfilAtivo}`}
+                name="email"
+                type="email"
+                placeholder={emailExemplo}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
-            <CampoSenha id={`senha-${perfilAtivo}`} />
-            <button type="submit" className="botao-entrar">Entrar no Sistema</button>
+
+            <CampoSenha
+              id={`senha-${perfilAtivo}`}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+
+            <button type="submit" className="botao-entrar" disabled={carregando}>
+              {carregando ? 'Entrando...' : 'Entrar no Sistema'}
+            </button>
           </form>
 
           {perfilAtivo === 'aluno' ? (
