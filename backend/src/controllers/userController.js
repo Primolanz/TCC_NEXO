@@ -34,7 +34,11 @@ exports.registerUser = async (req, res) => {
 
     return res.status(201).json({
       message: 'Usuário cadastrado com sucesso!',
-      user: userData[0]
+      user: userData[0],
+      session: authData.session ? {
+        access_token: authData.session.access_token,
+        refresh_token: authData.session.refresh_token,
+      } : null
     });
   } catch (error) {
     return res.status(500).json({ error: 'Erro interno ao cadastrar usuário.' });
@@ -43,6 +47,21 @@ exports.registerUser = async (req, res) => {
 
 
 
+
+exports.refreshSession = async (req, res) => {
+  const { refresh_token: refreshToken } = req.body;
+  if (!refreshToken) return res.status(400).json({ error: 'Refresh token não fornecido.' });
+  try {
+    const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
+    if (error || !data.session) return res.status(401).json({ error: 'Sessão expirada. Faça login novamente.' });
+    return res.status(200).json({ session: {
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    } });
+  } catch {
+    return res.status(500).json({ error: 'Não foi possível renovar a sessão.' });
+  }
+};
 
 exports.loginUser = async (req, res) => {
   const { email, password } = req.body;
@@ -73,13 +92,29 @@ exports.loginUser = async (req, res) => {
       return res.status(400).json({ error: 'Erro ao buscar perfil do usuário.' });
     }
 
+    const [{ data: diagnostic, error: diagnosticError }, { data: studyPlan, error: planError }] = await Promise.all([
+      supabase.from('diagnostics').select('id').eq('user_id', authData.user.id).limit(1).maybeSingle(),
+      supabase.from('study_plans').select('id').eq('user_id', authData.user.id).limit(1).maybeSingle(),
+    ]);
+    if (diagnosticError) throw diagnosticError;
+    if (planError) throw planError;
+
+    const hasProfile = Boolean(userData.age_group && userData.occupation && userData.main_goal);
+    const hasDiagnostic = Boolean(diagnostic);
+    const hasStudyPlan = Boolean(studyPlan);
+
     return res.status(200).json({
       message: 'Login realizado com sucesso!',
       session: {
         access_token: authData.session.access_token,
         refresh_token: authData.session.refresh_token,
       },
-      user: userData,
+      user: {
+        ...userData,
+        hasDiagnostic,
+        hasStudyPlan,
+        onboardingCompleted: hasProfile || hasDiagnostic || hasStudyPlan,
+      },
     });
   } catch (error) {
     return res.status(500).json({ error: 'Erro interno ao realizar login.' });

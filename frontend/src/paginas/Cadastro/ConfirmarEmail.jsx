@@ -1,11 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '../../paginasCSS/Login.css'
 import CabecalhoPagina from '../../componentes/CabecalhoPagina.jsx'
+import { saveSession } from '../../servicos/apiClient.js'
 
 function ConfirmarEmail({ tipoUsuario = 'aluno' }) {
   const [emailConfirmado, definirEmailConfirmado] = useState(false)
   const navegar = useNavigate()
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    const query = new URLSearchParams(window.location.search)
+    const accessToken = hash.get('access_token') || query.get('access_token')
+    const refreshToken = hash.get('refresh_token') || query.get('refresh_token')
+    if (accessToken) saveSession({ access_token: accessToken, refresh_token: refreshToken })
+  }, [])
   const destino = tipoUsuario === 'professor'
     ? '/cadastro/professor/aguardando-aprovacao'
     : '/onboarding/escolher-plano'
@@ -31,7 +39,9 @@ function ConfirmarEmail({ tipoUsuario = 'aluno' }) {
             </label>
           </div>
 
-          <button type="button" className="botao-entrar" disabled={!emailConfirmado} onClick={() => navegar(destino)}>
+          <button type="button" className="botao-entrar" disabled={!emailConfirmado} onClick={() => {
+            navegar(tipoUsuario === 'aluno' && !localStorage.getItem('nexo_token') ? '/login' : destino)
+          }}>
             Continuar
           </button>
         </section>

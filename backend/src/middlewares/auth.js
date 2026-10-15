@@ -1,4 +1,4 @@
-const { createClient } = require('@supabase/supabase-js');
+const supabase = require('../config/supabase');
 
 module.exports = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -7,7 +7,7 @@ module.exports = async (req, res, next) => {
     return res.status(401).json({ error: 'Token de autenticação não fornecido.' });
   }
 
-  const parts = authHeader.split(' ');
+  const parts = authHeader.trim().split(/\s+/);
 
   if (parts.length !== 2 || parts[0] !== 'Bearer') {
     return res.status(401).json({ error: 'Formato do token inválido. Use "Bearer <TOKEN>".' });
@@ -17,20 +17,8 @@ module.exports = async (req, res, next) => {
 
   try {
     // Instancia um cliente temporário com o token da requisição
-    const supabaseUserClient = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_KEY,
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      }
-    );
-
     // Obtém o usuário associado a este token
-    const { data: { user }, error } = await supabaseUserClient.auth.getUser();
+    const { data: { user }, error } = await supabase.auth.getUser(token);
 
     if (error || !user) {
       return res.status(401).json({ error: 'Token inválido ou expirado.' });

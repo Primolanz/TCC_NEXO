@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import PaginaInicial from './paginas/PaginaInicial.jsx'
+import DashboardAluno from './paginas/DashboardAluno.jsx'
 import Login from './paginas/Login/Login.jsx'
 import LoginProfessor from './paginas/Login/LoginProfessor.jsx'
 import LoginAdministrador from './paginas/Login/LoginAdministrador.jsx'
@@ -13,11 +14,13 @@ import SobreVoceAluno from './paginas/OnboardingAluno/SobreVoceAluno.jsx'
 import ObjetivosAluno from './paginas/OnboardingAluno/ObjetivosAluno.jsx'
 import ProvaInicialAluno from './paginas/OnboardingAluno/ProvaInicialAluno.jsx'
 import ProvaDiagnostica from './paginas/AvaliacaoDiagnostica/ProvaDiagnostica.jsx'
+import ResultadoDiagnostico from './paginas/AvaliacaoDiagnostica/ResultadoDiagnostico.jsx'
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<PaginaInicial />} />
+      <Route path="/inicio" element={<DashboardAluno />} />
       <Route path="/login" element={<Login />} />
       <Route path="/login/professor" element={<LoginProfessor />} />
       <Route path="/login/administrador" element={<LoginAdministrador />} />
@@ -27,7 +30,6 @@ function App() {
       <Route path="/cadastro/aluno/confirmar-email" element={<ConfirmarEmail tipoUsuario="aluno" />} />
       <Route path="/cadastro/professor/confirmar-email" element={<ConfirmarEmail tipoUsuario="professor" />} />
       <Route path="/cadastro/professor/aguardando-aprovacao" element={<AguardandoAprovacaoProfessor />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
 
       <Route path="/onboarding/escolher-plano" element={<EscolherPlano />} />
       <Route path="/onboarding/checkout" element={<CheckoutPlano />} />
@@ -36,7 +38,9 @@ function App() {
       <Route path="/onboarding/aluno/prova-inicial" element={<ProvaInicialAluno />} />
 
       <Route path="/avaliacao/diagnostica" element={<ProvaDiagnostica />} />
+      <Route path="/avaliacao/resultado" element={<ResultadoDiagnostico />} />
 
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

@@ -161,6 +161,41 @@
   opacity: 0.45;
 }
 
+.pagina-resultado-diagnostico {
+  min-height: 100vh;
+  color: #ffffff;
+  background: radial-gradient(circle at 8% 10%, rgba(94, 34, 183, 0.24), transparent 34%), radial-gradient(circle at 92% 90%, rgba(80, 25, 170, 0.16), transparent 38%), #030304;
+}
+
+.cabecalho-resultados { margin-bottom: 28px; text-align: center; }
+.cabecalho-resultados p { margin: 0 0 8px; color: #994fff; font-size: 13px; font-weight: 800; letter-spacing: 0.12em; }
+.cabecalho-resultados h1 { margin: 0; color: #ffffff; font-size: clamp(1.8rem, 4vw, 2.5rem); }
+.cabecalho-resultados span { display: block; margin-top: 8px; color: #bdb9c4; }
+.grade-desempenho-materias { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.card-desempenho-materia, .card-resumo-geral, .cartao-resultado-confirmacao { border: 1px solid #8338ed; border-radius: 20px; background: linear-gradient(145deg, rgba(35, 24, 48, 0.96), rgba(14, 13, 17, 0.98)); box-shadow: 0 12px 36px rgba(45, 13, 82, 0.2); }
+.card-desempenho-materia { padding: 24px; }
+.card-desempenho-materia h2, .card-resumo-geral h2 { margin: 0; color: #ffffff; font-size: 20px; }
+.percentual-desempenho { display: block; margin-top: 18px; color: #b780ff; font-size: 42px; line-height: 1; }
+.card-desempenho-materia p { color: #c4c0ca; }
+.classificacao-desempenho { display: inline-flex; padding: 5px 14px; border: 1px solid #8b56c7; border-radius: 999px; color: #e5d2ff; background: rgba(128, 51, 233, 0.18); font-size: 13px; font-weight: 700; }
+.classificacao-bom { border-color: #6e43ad; }
+.card-desempenho-materia h3 { margin: 24px 0 10px; color: #ffffff; font-size: 14px; }
+.tags-pontos-fortes { display: flex; flex-wrap: wrap; gap: 8px; }
+.tags-pontos-fortes span { padding: 6px 10px; border: 1px solid #63359b; border-radius: 999px; color: #d7c1f3; background: #20152e; font-size: 12px; }
+.card-resumo-geral { margin-top: 20px; padding: 24px; }
+.dados-resumo-geral { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; text-align: center; }
+.dados-resumo-geral div { display: grid; gap: 6px; }
+.dados-resumo-geral strong { color: #b780ff; font-size: 27px; }
+.dados-resumo-geral span { color: #c4c0ca; font-size: 13px; }
+.botao-resultado-principal { display: flex; align-items: center; justify-content: center; width: min(100%, 360px); min-height: 50px; margin: 26px auto 0; padding: 0 20px; border: 0; border-radius: 12px; color: #ffffff; background: #8033e9; font-size: 15px; font-weight: 700; cursor: pointer; }
+.botao-resultado-principal:hover { background: #934cf4; }
+.link-voltar-resultados { margin-top: 18px; text-align: center; }
+.link-voltar-resultados a { color: #b780ff; }
+.cartao-resultado-confirmacao { max-width: 650px; margin: 6vh auto 0; padding: clamp(28px, 6vw, 56px); text-align: center; }
+.icone-resultado-confirmacao { display: grid; width: 68px; height: 68px; margin: 0 auto 22px; place-items: center; border-radius: 50%; color: #ffffff; background: #8033e9; font-size: 34px; font-weight: 800; }
+.cartao-resultado-confirmacao h1 { margin: 0; color: #ffffff; font-size: clamp(1.6rem, 4vw, 2.25rem); }
+.cartao-resultado-confirmacao p { margin: 14px 0 0; color: #c4c0ca; line-height: 1.6; }
+
 @media (max-width: 640px) {
   .conteudo-prova-diagnostica {
     padding: 38px 16px;
@@ -191,6 +226,13 @@
     width: 100%;
     margin-top: 24px;
   }
+
+
+  .grade-desempenho-materias { grid-template-columns: 1fr; }
+  .dados-resumo-geral { grid-template-columns: 1fr; text-align: left; }
+  .dados-resumo-geral div { grid-template-columns: 1fr auto; align-items: center; }
+}
+
 }
 
 .navegacao-questoes {
@@ -238,3 +280,4 @@
     width: 100%;
   }
 }
+
