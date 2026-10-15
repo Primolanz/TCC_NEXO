@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import "../../paginasCSS/Login.css";
 import CabecalhoPagina from "../../componentes/CabecalhoPagina.jsx";
 import CampoSenha from "../../componentes/CampoSenha.jsx";
+import { saveSession } from "../../servicos/apiClient.js";
 
 function CadastroAluno() {
   const navegar = useNavigate();
@@ -56,7 +57,7 @@ function CadastroAluno() {
       const tokenRecebido =
         dados.token || dados.accessToken || dados.session?.access_token;
       if (tokenRecebido) {
-        localStorage.setItem("nexo_token", tokenRecebido);
+        saveSession(dados.session || { access_token: tokenRecebido, refresh_token: dados.refresh_token });
         localStorage.setItem("nexo_user", JSON.stringify(dados.user || {}));
       }
 

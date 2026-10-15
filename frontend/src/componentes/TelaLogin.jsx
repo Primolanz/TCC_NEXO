@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import CampoSenha from "./CampoSenha.jsx";
 import CabecalhoPagina from "./CabecalhoPagina.jsx";
+import { apiClient, saveSession } from "../servicos/apiClient.js";
 import "../paginasCSS/Login.css";
 
 const caminhosPorPerfil = {
@@ -15,8 +16,25 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
   const [password, setPassword] = useState("");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const [validandoSessao, setValidandoSessao] = useState(() => perfilAtivo === "aluno" && Boolean(localStorage.getItem("nexo_token")));
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (perfilAtivo !== "aluno" || !localStorage.getItem("nexo_token")) {
+      setValidandoSessao(false);
+      return;
+    }
+
+    let ativo = true;
+    apiClient("/dashboard")
+      .then((response) => {
+        if (response.ok) navigate("/inicio", { replace: true });
+      })
+      .catch(() => {})
+      .finally(() => { if (ativo) setValidandoSessao(false); });
+    return () => { ativo = false; };
+  }, [perfilAtivo, navigate]);
 
   async function manipularSubmissao(evento) {
     evento.preventDefault();
@@ -50,7 +68,7 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
       }
 
       // 3. Salvar o Token e dados do usuário no localStorage
-      localStorage.setItem("nexo_token", tokenRecebido);
+      saveSession(dados.session || { access_token: tokenRecebido, refresh_token: dados.refresh_token });
       localStorage.setItem("nexo_user", JSON.stringify(dados.user || {}));
 
       // 4. Redirecionamento condicional inteligente
@@ -58,11 +76,16 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
 
       if (perfilAtivo === "aluno") {
         // Se o servidor retornar que o onboarding/diagnostico ja foi concluido:
-        const jaRespondeuFormulario =
-          dados.user?.onboardingCompleted || dados.user?.hasStudyPlan;
+        const usuario = dados.user || {};
+        const jaRespondeuFormulario = Boolean(
+          usuario.onboardingCompleted ||
+          usuario.hasDiagnostic ||
+          usuario.hasStudyPlan ||
+          (usuario.age_group && usuario.occupation && usuario.main_goal),
+        );
 
         if (jaRespondeuFormulario) {
-          navigate("/"); // Já respondeu tudo, vai direto para o Início / Dashboard
+          navigate("/inicio");
         } else {
           navigate("/onboarding/aluno"); // Conta nova ou incompleta, vai para as perguntas
         }
@@ -73,6 +96,8 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
       setCarregando(false);
     }
   }
+
+  if (validandoSessao) return <main className="pagina-login" aria-busy="true" />;
 
   return (
     <main className="pagina-login">

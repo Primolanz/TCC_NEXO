@@ -1,152 +1,120 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '../../paginasCSS/AvaliacaoDiagnostica.css'
+import { apiClient } from '../../servicos/apiClient.js'
+
+const TOTAL_QUESTOES = 20
 
 function ProvaDiagnostica() {
-  const [respostaSelecionada, definirRespostaSelecionada] = useState('')
-  const [carregando, setCarregando] = useState(false)
+  const [questoes, setQuestoes] = useState([])
+  const [indiceAtual, setIndiceAtual] = useState(0)
+  const [respostas, setRespostas] = useState({})
+  const [carregando, setCarregando] = useState(true)
+  const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
   const navegar = useNavigate()
 
-  const questao = {
-    numero: 1,
-    totalQuestoes: 20,
-    materia: 'Português',
-    enunciado: 'Qual palavra está escrita corretamente?',
-    alternativas: [
-      { id: 'a', texto: 'A) Exessão' },
-      { id: 'b', texto: 'B) Exceção' },
-      { id: 'c', texto: 'C) Excessão' },
-      { id: 'd', texto: 'D) Eseção' },
-    ],
-  }
-
-  const progresso = (questao.numero / questao.totalQuestoes) * 100
-
-  async function finalizarEGerarPlano() {
-    setCarregando(true)
-    setErro('')
-
-    try {
-      // 1. Resgatar token e tratar strings/aspas acidentais
-      let token = localStorage.getItem('nexo_token')
-
-      if (!token || token === 'undefined' || token === 'null') {
-        throw new Error('Sessão expirada ou inválida. Por favor, faça login novamente.')
-      }
-
-      // Remove aspas adicionais caso tenha sido salvo com JSON.stringify por engano
-      token = token.replace(/^"(.*)"$/, '$1').trim()
-
-      const perfilRaw = localStorage.getItem('nexo_onboarding_perfil')
-      const objetivo = localStorage.getItem('nexo_onboarding_objetivo')
-      const perfil = perfilRaw ? JSON.parse(perfilRaw) : {}
-
-      // 2. Preparar payload para a API
-      const payload = {
-        dataNascimento: perfil.dataNascimento,
-        ocupacaoAtual: perfil.ocupacaoAtual,
-        objetivo: objetivo,
-        respostasDiagnostico: [
-          { questaoId: questao.numero, resposta: respostaSelecionada }
-        ]
-      }
-
-      // 3. Requisitar geração do plano autenticada via Bearer Token
-      const resposta = await fetch('http://localhost:3000/api/study-plans/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload),
+  useEffect(() => {
+    let ativo = true
+    apiClient('/diagnostics/questions')
+      .then(async (response) => {
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.message || data.error || 'Não foi possível carregar as questões.')
+        if (!Array.isArray(data) || data.length < TOTAL_QUESTOES) {
+          throw new Error(`A prova precisa de ${TOTAL_QUESTOES} questões cadastradas.`)
+        }
+        if (ativo) setQuestoes(data.slice(0, TOTAL_QUESTOES))
       })
+      .catch((error) => { if (ativo) setErro(error.message) })
+      .finally(() => { if (ativo) setCarregando(false) })
+    return () => { ativo = false }
+  }, [])
 
-      const dados = await resposta.json()
+  const questao = questoes[indiceAtual]
+  const respostaAtual = questao ? respostas[questao.id] : ''
+  const progresso = useMemo(() => questoes.length ? Math.round(((indiceAtual + 1) / TOTAL_QUESTOES) * 100) : 0, [indiceAtual, questoes.length])
+  const opcoes = Array.isArray(questao?.options)
+    ? questao.options.map((option, index) => typeof option === 'object'
+      ? { id: index, text: option.text ?? option.label ?? option.value ?? JSON.stringify(option) }
+      : { id: index, text: `${String.fromCharCode(65 + index)}) ${option}` })
+    : Object.entries(questao?.options || {}).map(([label, text], index) => ({ id: index, text: `${label}) ${text}` }))
 
-      if (!resposta.ok) {
-        throw new Error(dados.message || dados.error || 'Erro ao processar diagnóstico com a IA.')
+  async function finalizarProva() {
+    setEnviando(true)
+    setErro('')
+    try {
+      const respostasEnviadas = questoes.map((item) => ({
+        question_id: item.id,
+        selected_option: respostas[item.id],
+      }))
+      const respostaDiagnostico = await apiClient('/diagnostics/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers: respostasEnviadas }),
+      })
+      const resultado = await respostaDiagnostico.json()
+      if (!respostaDiagnostico.ok) throw new Error(resultado.message || resultado.error || 'Erro ao salvar o diagnóstico.')
+
+      if (resultado.canGenerateAIPlan) {
+        const respostaPlano = await apiClient('/study-plans/generate', { method: 'POST' })
+        const plano = await respostaPlano.json()
+        if (!respostaPlano.ok) throw new Error(plano.message || plano.error || 'Diagnóstico salvo, mas não foi possível gerar o plano.')
+        resultado.plan = plano.plan
       }
 
-      // 4. Limpar o rascunho local e redirecionar
+      localStorage.setItem('nexo_diagnostic_result', JSON.stringify(resultado))
       localStorage.removeItem('nexo_onboarding_perfil')
       localStorage.removeItem('nexo_onboarding_objetivo')
-      
-      navegar('/')
-    } catch (err) {
-      setErro(err.message)
+      navegar('/avaliacao/resultado', { state: { resultado, etapa: 'confirmacao' } })
+    } catch (error) {
+      setErro(error.message)
     } finally {
-      setCarregando(false)
+      setEnviando(false)
     }
+  }
+
+  function avancar() {
+    if (indiceAtual < TOTAL_QUESTOES - 1) setIndiceAtual((indice) => indice + 1)
+    else finalizarProva()
   }
 
   return (
     <main className="pagina-prova-diagnostica">
       <section className="conteudo-prova-diagnostica">
         <div className="progresso-prova">
-          <span>
-            {questao.numero}/{questao.totalQuestoes}
-          </span>
-
+          <span>{questoes.length ? `${indiceAtual + 1}/${TOTAL_QUESTOES}` : `0/${TOTAL_QUESTOES}`}</span>
           <div className="area-barra-progresso">
             <span className="titulo-progresso-prova">Progresso</span>
-
-            <div
-              className="barra-progresso-prova"
-              aria-label={`Progresso da prova: ${progresso}%`}
-            >
-              <div
-                className="preenchimento-progresso-prova"
-                style={{ width: `${progresso}%` }}
-              />
+            <div className="barra-progresso-prova" aria-label={`Progresso da prova: ${progresso}%`}>
+              <div className="preenchimento-progresso-prova" style={{ width: `${progresso}%` }} />
             </div>
           </div>
-
           <span>{progresso}%</span>
         </div>
 
-        {erro && (
-          <div style={{ color: '#ef4444', backgroundColor: '#fee2e2', padding: '12px', borderRadius: '6px', marginBottom: '15px', textAlign: 'center' }}>
-            {erro}
-          </div>
+        {erro && <div style={{ color: '#ef4444', backgroundColor: '#fee2e2', padding: '12px', borderRadius: '6px', marginBottom: '15px', textAlign: 'center' }}>{erro}</div>}
+        {carregando && <p>Carregando questões...</p>}
+        {!carregando && questao && (
+          <>
+            <section className="cartao-questao-diagnostica">
+              <header className="cabecalho-questao-diagnostica">
+                <h1>Questão {indiceAtual + 1}</h1>
+                <span>{questao.subject}</span>
+              </header>
+              <p className="enunciado-questao">{questao.statement}</p>
+              <div className="alternativas-questao">
+                {opcoes.map((option) => (
+                  <button key={String(option.id)} type="button" className={`alternativa-questao ${respostaAtual === option.id ? 'alternativa-questao-selecionada' : ''}`} onClick={() => setRespostas((anteriores) => ({ ...anteriores, [questao.id]: option.id }))}>
+                    {option.text}
+                  </button>
+                ))}
+              </div>
+            </section>
+            <button type="button" className="botao-proxima-questao" disabled={respostaAtual === undefined || respostaAtual === null || enviando} onClick={avancar}>
+              {enviando ? 'Salvando prova...' : indiceAtual < TOTAL_QUESTOES - 1 ? 'Próxima Questão →' : 'Finalizar Prova'}
+            </button>
+          </>
         )}
-
-        <section className="cartao-questao-diagnostica">
-          <header className="cabecalho-questao-diagnostica">
-            <h1>Questão {questao.numero}</h1>
-            <span>{questao.materia}</span>
-          </header>
-
-          <p className="enunciado-questao">
-            {questao.enunciado}
-          </p>
-
-          <div className="alternativas-questao">
-            {questao.alternativas.map((alternativa) => (
-              <button
-                key={alternativa.id}
-                type="button"
-                className={`alternativa-questao ${
-                  respostaSelecionada === alternativa.id
-                    ? 'alternativa-questao-selecionada'
-                    : ''
-                }`}
-                onClick={() => definirRespostaSelecionada(alternativa.id)}
-              >
-                {alternativa.texto}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <button
-          type="button"
-          className="botao-proxima-questao"
-          disabled={!respostaSelecionada || carregando}
-          onClick={finalizarEGerarPlano}
-        >
-          {carregando ? 'Gerando Plano com IA...' : 'Finalizar e Gerar Plano →'}
-        </button>
       </section>
     </main>
   )

@@ -6,6 +6,7 @@ const supabase = require('../config/supabase'); // Importante!
 
 router.post('/register', userController.registerUser);
 router.post('/login', userController.loginUser);
+router.post('/refresh', userController.refreshSession);
 
 router.put('/onboarding', authMiddleware, userController.updateOnboarding);
 

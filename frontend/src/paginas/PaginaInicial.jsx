@@ -1,9 +1,32 @@
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import imagemLogoNexo from '../assets/NEXO_LOGO-sem-fundo.png'
 import gifLogoNexo from '../assets/NEXO_GIF.gif'
+import { apiClient } from '../servicos/apiClient.js'
 import '../paginasCSS/PaginaInicial.css'
 
 function PaginaInicial() {
+  const navegar = useNavigate()
+  const [validandoSessao, setValidandoSessao] = useState(() => Boolean(localStorage.getItem('nexo_token')))
+
+  useEffect(() => {
+    if (!localStorage.getItem('nexo_token')) {
+      setValidandoSessao(false)
+      return
+    }
+
+    let ativo = true
+    apiClient('/dashboard')
+      .then((response) => {
+        if (response.ok) navegar('/inicio', { replace: true })
+      })
+      .catch(() => {})
+      .finally(() => { if (ativo) setValidandoSessao(false) })
+    return () => { ativo = false }
+  }, [navegar])
+
+  if (validandoSessao) return <main className="pagina-inicial" aria-busy="true" />
+
   return (
     <main className="pagina-inicial">
       <header className="cabecalho-inicial">

@@ -2,18 +2,38 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import imagemLogoNexo from '../../assets/NEXO_LOGO-sem-fundo.png'
 import '../../paginasCSS/OnboardingAluno.css'
+import { apiClient } from '../../servicos/apiClient.js'
 
 function ObjetivosAluno() {
   const [objetivoSelecionado, definirObjetivoSelecionado] = useState('')
+  const [salvando, definirSalvando] = useState(false)
+  const [erro, definirErro] = useState('')
   const navegar = useNavigate()
 
-  function avancarParaProvaInicial() {
+  async function avancarParaProvaInicial() {
     if (!objetivoSelecionado) return
-
-    // Salva o objetivo no localStorage
-    localStorage.setItem('nexo_onboarding_objetivo', objetivoSelecionado)
-
-    navegar('/onboarding/aluno/prova-inicial')
+    definirSalvando(true)
+    definirErro('')
+    try {
+      const perfil = JSON.parse(localStorage.getItem('nexo_onboarding_perfil') || '{}')
+      if (!perfil.dataNascimento || !perfil.ocupacaoAtual) throw new Error('Preencha seus dados de perfil antes de continuar.')
+      const nascimento = new Date(`${perfil.dataNascimento}T00:00:00`)
+      const idade = Math.floor((Date.now() - nascimento.getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+      const faixaEtaria = idade < 18 ? 'Menos de 18' : idade < 25 ? '18-24' : idade < 35 ? '25-34' : idade < 45 ? '35-44' : '45 ou mais'
+      const response = await apiClient('/users/onboarding', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ age_group: faixaEtaria, occupation: perfil.ocupacaoAtual, main_goal: objetivoSelecionado }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message || data.error || 'Não foi possível salvar seu objetivo.')
+      localStorage.setItem('nexo_onboarding_objetivo', objetivoSelecionado)
+      navegar('/onboarding/aluno/prova-inicial')
+    } catch (error) {
+      definirErro(error.message)
+    } finally {
+      definirSalvando(false)
+    }
   }
 
   return (
@@ -68,11 +88,13 @@ function ObjetivosAluno() {
               </button>
             </div>
 
+            {erro && <p role="alert" style={{ color: '#f07a7a', textAlign: 'center' }}>{erro}</p>}
+
             <button
               type="button"
               className="botao-proximo-onboarding botao-proximo-centralizado"
               onClick={avancarParaProvaInicial}
-              disabled={!objetivoSelecionado}
+              disabled={!objetivoSelecionado || salvando}
             >
               Próximo passo →
             </button>
