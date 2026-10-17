@@ -138,6 +138,25 @@ function subjectBadgeClass(subject) {
   return 'dashboard-badge-geral'
 }
 
+function performanceBadge(score) {
+  if (score === null || score === undefined || score === '') {
+    return { label: 'Sem resultado', className: 'dashboard-status-sem-resultado' }
+  }
+  const value = Number(score)
+  if (!Number.isFinite(value)) return { label: 'Sem resultado', className: 'dashboard-status-sem-resultado' }
+  if (value < 40) return { label: 'Precisa de Atenção', className: 'dashboard-status-insuficiente' }
+  if (value < 70) return { label: 'Regular', className: 'dashboard-status-regular' }
+  if (value < 90) return { label: 'Bom Desempenho', className: 'dashboard-status-bom' }
+  return { label: 'Excelente', className: 'dashboard-status-excelente' }
+}
+
+function formatAssessmentDate(value) {
+  if (!value) return 'Data indisponível'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Data indisponível'
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' }).format(date)
+}
+
 function DashboardAluno() {
   const [dados, setDados] = useState(null)
   const [erro, setErro] = useState('')
@@ -203,24 +222,51 @@ function DashboardAluno() {
     : objetivoId === 'carreira'
       ? 'Foco em carreira'
       : objetivoId || 'Nenhum objetivo cadastrado'
+  const statusGeral = performanceBadge(dados.hasDiagnostic ? dados.overall_average : null)
   const resumoGeral = (
     <article className="dashboard-resumo">
-      <h2>Resumo geral</h2>
+      <header className="dashboard-resumo-cabecalho">
+        <div><span>SEU DESEMPENHO</span><h2>Resumo geral</h2></div>
+        <span className={'dashboard-status-badge ' + statusGeral.className}>
+          {statusGeral.label}
+        </span>
+      </header>
       <div className="dashboard-dados-resumo">
-        <div><span>Média geral</span><strong>{dados.overall_average}%</strong></div>
-        <div><span>Questões respondidas</span><strong>{dados.total_questions || 0}</strong></div>
-        <div><span>Acertos</span><strong>{dados.correct_answers || 0}/{dados.total_questions || 0}</strong></div>
+        <div className="dashboard-metrica">
+          <span className="dashboard-icone-metrica dashboard-icone-media" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 19V5m0 14h17M7 15l4-4 3 2 6-7" /></svg>
+          </span>
+          <span>Média geral</span><strong>{dados.hasDiagnostic ? `${dados.overall_average ?? 0}%` : '—'}</strong>
+        </div>
+        <div className="dashboard-metrica">
+          <span className="dashboard-icone-metrica dashboard-icone-questoes" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" /></svg>
+          </span>
+          <span>Questões respondidas</span><strong>{dados.total_questions || 0}</strong>
+        </div>
+        <div className="dashboard-metrica">
+          <span className="dashboard-icone-metrica dashboard-icone-acertos" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><path d="m12 12 6-6" /></svg>
+          </span>
+          <span>Acertos</span><strong>{dados.correct_answers || 0}<small>/{dados.total_questions || 0}</small></strong>
+        </div>
       </div>
     </article>
   )
+
   const cardsMaterias = (
     <div className="dashboard-grade-materias">
       {materias.map(({ key, title }) => {
-        const materia = dados.subjects?.[key] || { score: 0, status: 'Sem resultado', strengths: [], weaknesses: [] }
+        const materia = dados.subjects?.[key] || { score: null, status: 'Sem resultado', strengths: [], weaknesses: [] }
+        const status = performanceBadge(materia.score)
+        const score = Number(materia.score)
         return <article className="dashboard-card-materia" key={key}>
-          <div className="dashboard-titulo-materia"><h3>{title}</h3><span>{materia.status}</span></div>
-          <strong className="dashboard-score">{materia.score}%</strong>
-          <div className="dashboard-trilha-score"><span style={{ width: `${Math.max(0, Math.min(100, materia.score))}%` }} /></div>
+          <div className="dashboard-titulo-materia">
+            <h3>{title}</h3>
+            <span className={'dashboard-status-badge ' + status.className}>{status.label}</span>
+          </div>
+          <strong className="dashboard-score">{materia.score !== null && materia.score !== undefined && Number.isFinite(score) ? `${score}%` : '—'}</strong>
+          <div className="dashboard-trilha-score"><span style={{ width: `${Math.max(0, Math.min(100, Number.isFinite(score) ? score : 0))}%` }} /></div>
           <p>{materia.feedback || 'Seu resultado aparecerá aqui após concluir a prova diagnóstica.'}</p>
           <h4>Seus pontos fortes</h4>
           <div className="dashboard-tags">
@@ -234,9 +280,11 @@ function DashboardAluno() {
       })}
     </div>
   )
-
   const planoFree = String(dados.user?.plan || 'FREE').toUpperCase() === 'FREE'
   const planoEstudos = normalizeStudyPlan(dados.study_plan)
+  const historico = Array.isArray(dados.history) ? dados.history : []
+  const avaliacaoAtual = historico[historico.length - 1]
+  const avaliacaoAnterior = historico[historico.length - 2]
 
   return (
     <main className="dashboard-aluno">
@@ -259,8 +307,16 @@ function DashboardAluno() {
 
       <div className="dashboard-area-principal" ref={areaPrincipalRef}>
         <header className="dashboard-cabecalho">
-          <span>Área do aluno</span>
-          <button type="button" onClick={sair}>Sair</button>
+          <div className="dashboard-area-aluno-badge">
+            <span className="dashboard-avatar-aluno" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5" /><path d="M4.5 20c.7-3.5 3.2-5.4 7.5-5.4s6.8 1.9 7.5 5.4" /></svg>
+            </span>
+            <span><small>ESPAÇO NEXO</small><strong>Área do aluno</strong></span>
+          </div>
+          <button className="dashboard-botao-sair" type="button" onClick={sair}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4m4-4H9" /></svg>
+            Sair
+          </button>
         </header>
         <section className="dashboard-conteudo">
           {abaAtiva === 'inicio' && <>
@@ -344,15 +400,74 @@ function DashboardAluno() {
             </>}
           </section>}
 
-          {abaAtiva === 'evolucao' && <section className="dashboard-card-evolucao">
-            <div className="dashboard-titulo-secao"><h1>Sua evolução</h1><span>Indicadores calculados a partir da última prova</span></div>
-            <div className="dashboard-evolucao-media"><strong>{dados.overall_average}%</strong><span>Média geral</span></div>
-            {materias.map(({ key, title }) => {
-              const score = dados.subjects?.[key]?.score || 0
-              return <div className="dashboard-evolucao-linha" key={key}>
-                <span>{title}</span><div className="dashboard-trilha-score"><span style={{ width: `${Math.max(0, Math.min(100, score))}%` }} /></div><strong>{score}%</strong>
+          {abaAtiva === 'evolucao' && <section className="dashboard-evolucao-pagina">
+            <header className="dashboard-evolucao-cabecalho">
+              <div>
+                <span>SEU HISTÓRICO DE APRENDIZAGEM</span>
+                <h1>Sua evolução</h1>
+                <p>Compare seus resultados e acompanhe seu progresso por matéria.</p>
               </div>
-            })}
+              <Link className="dashboard-cta-evolucao" to="/avaliacao/diagnostica">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4.5 15a8 8 0 0 0 14 2M4 17v-5h5m10.5-3a8 8 0 0 0-14-2" /></svg>
+                Refazer Avaliação Diagnóstica
+              </Link>
+            </header>
+
+            <aside className="dashboard-evolucao-explicacao">
+              <span className="dashboard-evolucao-info-icone" aria-hidden="true">i</span>
+              <p>A evolução é calculada comparando o resultado da avaliação diagnóstica mais recente com a anterior. Cada nova avaliação atualiza este histórico.</p>
+            </aside>
+
+            {historico.length > 0 ? <>
+              <div className="dashboard-historico-provas">
+                {historico.map((prova) => {
+                  const statusProva = performanceBadge(prova.overall_average)
+                  return <article className="dashboard-historico-card" key={prova.diagnostic_id}>
+                    <div><span>{prova.label}</span><small>{formatAssessmentDate(prova.created_at)}</small></div>
+                    <strong>{prova.overall_average}%</strong>
+                    <span className={'dashboard-status-badge ' + statusProva.className}>{statusProva.label}</span>
+                  </article>
+                })}
+              </div>
+
+              {avaliacaoAnterior && avaliacaoAtual ? <section className="dashboard-comparacao-materias">
+                <div className="dashboard-comparacao-titulo">
+                  <div><span>COMPARATIVO</span><h2>Desempenho por matéria</h2></div>
+                  <p>{avaliacaoAnterior.label} → {avaliacaoAtual.label}</p>
+                </div>
+                {materias.map(({ key, title }) => {
+                  const anterior = avaliacaoAnterior.subjects?.[key]?.score
+                  const atual = avaliacaoAtual.subjects?.[key]?.score
+                  const temComparacao = anterior !== null && anterior !== undefined && atual !== null && atual !== undefined
+                  const diferenca = temComparacao ? Number(atual) - Number(anterior) : null
+                  return <article className="dashboard-comparacao-linha" key={key}>
+                    <div className="dashboard-comparacao-label">
+                      <strong>{title}</strong>
+                      {temComparacao
+                        ? <span className={diferenca > 0 ? 'dashboard-variacao-positiva' : diferenca < 0 ? 'dashboard-variacao-negativa' : 'dashboard-variacao-neutra'}>
+                            {diferenca > 0 ? '+' : ''}{diferenca.toFixed(1)} p.p.
+                          </span>
+                        : <span>Sem dados comparáveis</span>}
+                    </div>
+                    <div className="dashboard-comparacao-valores">
+                      <span>{avaliacaoAnterior.label}: {temComparacao ? `${anterior}%` : '—'}</span>
+                      <span>{avaliacaoAtual.label}: {temComparacao ? `${atual}%` : '—'}</span>
+                    </div>
+                    <div className="dashboard-comparacao-barras" aria-label={`Comparação de ${title}`}>
+                      <span><i className="dashboard-barra-anterior" style={{ width: `${Math.max(0, Math.min(100, Number(anterior) || 0))}%` }} /></span>
+                      <span><i className="dashboard-barra-atual" style={{ width: `${Math.max(0, Math.min(100, Number(atual) || 0))}%` }} /></span>
+                    </div>
+                  </article>
+                })}
+                <div className="dashboard-legenda-comparacao"><span><i className="dashboard-legenda-anterior" />Avaliação anterior</span><span><i className="dashboard-legenda-atual" />Avaliação recente</span></div>
+              </section> : <div className="dashboard-historico-vazio">
+                <strong>Seu histórico está começando</strong>
+                <p>Depois de refazer a avaliação, você verá aqui a comparação dos resultados por matéria.</p>
+              </div>}
+            </> : <div className="dashboard-historico-vazio">
+              <strong>Nenhuma avaliação registrada</strong>
+              <p>Faça sua primeira avaliação diagnóstica para começar a acompanhar sua evolução.</p>
+            </div>}
           </section>}
         </section>
       </div>

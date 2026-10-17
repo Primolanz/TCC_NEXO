@@ -152,14 +152,24 @@ function ProvaDiagnostica() {
                 ))}
               </div>
             </section>
-            <button
-              type="button"
-              className="botao-proxima-questao"
-              disabled={respostaAtual === undefined || respostaAtual === null || enviando}
-              onClick={avancar}
-            >
-              {enviando ? 'Salvando prova...' : indiceAtual < TOTAL_QUESTOES - 1 ? 'Próxima Questão →' : 'Finalizar Prova'}
-            </button>
+            <footer className="navegacao-questoes">
+              <button
+                type="button"
+                className="botao-voltar-questao"
+                disabled={indiceAtual === 0 || enviando}
+                onClick={() => setIndiceAtual((indice) => Math.max(0, indice - 1))}
+              >
+                ← Voltar
+              </button>
+              <button
+                type="button"
+                className="botao-proxima-questao"
+                disabled={respostaAtual === undefined || respostaAtual === null || enviando}
+                onClick={avancar}
+              >
+                {enviando ? 'Salvando prova...' : indiceAtual < TOTAL_QUESTOES - 1 ? 'Próxima Questão →' : 'Finalizar Prova'}
+              </button>
+            </footer>
           </>
         )}
       </section>
