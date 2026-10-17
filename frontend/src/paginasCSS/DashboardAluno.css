@@ -5,7 +5,7 @@
 .dashboard-sidebar nav button { width: 100%; padding: 13px 14px; border: 0; border-radius: 10px; color: #bdb8c6; background: transparent; font-size: 14px; text-align: left; cursor: pointer; transition: background .2s, color .2s; }
 .dashboard-sidebar nav button:hover, .dashboard-sidebar nav .dashboard-link-ativo { color: #fff; background: #29183b; }
 .dashboard-sidebar nav .dashboard-link-ativo { box-shadow: inset 3px 0 #984dff; }
-.dashboard-area-principal { min-width: 0; height: 100vh; overflow-y: auto; scroll-behavior: auto; }
+.dashboard-area-principal { min-width: 0; height: 100vh; overflow-y: auto; scroll-behavior: smooth; scroll-padding-top: 20px; overscroll-behavior-y: contain; }
 .dashboard-cabecalho { display: flex; height: 76px; align-items: center; justify-content: flex-end; gap: 20px; padding: 0 clamp(20px, 4vw, 56px); border-bottom: 1px solid #211b2a; color: #c9c3d0; }
 .dashboard-cabecalho button { min-width: 88px; min-height: 38px; border: 1px solid #7040a3; border-radius: 9px; color: #fff; background: #251735; font-weight: 700; cursor: pointer; }
 .dashboard-cabecalho button:hover { background: #3a2054; }
@@ -46,10 +46,37 @@
 .dashboard-card-plano > div > span { display: block; margin-top: 8px; color: #bcb5c5; font-size: 13px; }
 .dashboard-card-plano > a { flex-shrink: 0; color: #c69aff; font-size: 13px; font-weight: 700; text-decoration: none; }
 .dashboard-card-evolucao { margin-top: 18px; padding: 21px 22px; scroll-margin-top: 24px; }
-.dashboard-aba-plano { max-width: 760px; padding: 30px; border: 1px solid #523276; border-radius: 18px; background: linear-gradient(145deg, #1e1727, #111014); }
+.dashboard-aba-plano { width: min(100%, 1040px); box-sizing: border-box; margin: 0 auto; padding: clamp(22px, 3.5vw, 40px); border: 1px solid #523276; border-radius: 20px; background: linear-gradient(145deg, #1e1727, #111014); }
 .dashboard-aba-plano > p:first-child { margin: 0 0 8px; color: #a765ff; font-size: 11px; font-weight: 800; letter-spacing: .14em; }
 .dashboard-aba-plano h1 { margin: 0 0 18px; font-size: 26px; }
 .dashboard-aba-plano > p { color: #c4c0ca; line-height: 1.6; }
+.dashboard-planos-cabecalho { margin-bottom: 26px; }
+.dashboard-planos-cabecalho > p { margin: 0 0 8px; color: #b77cff; font-size: 11px; font-weight: 800; letter-spacing: .15em; }
+.dashboard-planos-cabecalho h1 { margin: 0; color: #fff; font-size: clamp(25px, 3vw, 32px); }
+.dashboard-foco-semana { margin: 0 0 28px; padding: clamp(22px, 3vw, 32px); border: 1px solid #8050b3; border-radius: 18px; background: radial-gradient(circle at 95% 0, #6730a344, transparent 44%), linear-gradient(120deg, #2c1c3d, #18121f); box-shadow: 0 14px 36px #0003; }
+.dashboard-foco-semana > span, .dashboard-dia-meta > span { color: #c89cff; font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+.dashboard-foco-semana h2 { margin: 10px 0 8px; color: #fff; font-size: clamp(20px, 2.5vw, 27px); line-height: 1.3; }
+.dashboard-foco-semana p, .dashboard-resumo-plano { margin: 0; color: #d0c5dc; font-size: 14px; line-height: 1.75; }
+.dashboard-resumo-plano { margin: 0 0 24px; padding: 18px 20px; border-left: 3px solid #9958e8; border-radius: 0 12px 12px 0; background: #17111e; }
+.dashboard-cronograma { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 20px; margin: 0 0 26px; }
+.dashboard-dia-card { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; gap: 17px; padding: 24px; border: 1px solid #3e304b; border-radius: 17px; background: linear-gradient(150deg, #1a1520, #121015); box-shadow: 0 10px 28px #0003; transition: border-color .2s ease, transform .2s ease; }
+.dashboard-dia-card:hover { transform: translateY(-2px); border-color: #76509a; }
+.dashboard-dia-cabecalho { display: flex; width: 100%; min-width: 0; align-items: flex-start; gap: 14px; }
+.dashboard-dia-indice { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border: 1px solid #694392; border-radius: 12px; color: #e5ceff; background: #2b1c3b; font-size: 15px; font-weight: 800; }
+.dashboard-dia-cabecalho > div { min-width: 0; }
+.dashboard-dia-cabecalho p { margin: 0 0 5px; color: #aa9ab9; font-size: 12px; font-weight: 700; }
+.dashboard-dia-cabecalho h2 { margin: 0; color: #fff; font-size: 17px; line-height: 1.45; overflow-wrap: anywhere; }
+.dashboard-materia-badge { display: inline-flex; align-items: center; padding: 6px 11px; border: 1px solid transparent; border-radius: 999px; font-size: 11px; font-weight: 750; }
+.dashboard-badge-matematica { border-color: #5354a1; color: #c8c8ff; background: #292946; }
+.dashboard-badge-portugues { border-color: #397e76; color: #b7f0e5; background: #173630; }
+.dashboard-badge-geral { border-color: #69498a; color: #e3c8ff; background: #2b1d39; }
+.dashboard-dia-meta { width: 100%; padding-top: 14px; border-top: 1px solid #302738; }
+.dashboard-dia-meta p { margin: 7px 0 0; color: #d2cbd9; font-size: 13px; line-height: 1.7; }
+.dashboard-youtube-link { display: inline-flex; max-width: 100%; align-items: center; gap: 9px; margin-top: auto; padding: 10px 13px; border: 1px solid #82425d; border-radius: 10px; color: #ffe6ef; background: #321923; font-size: 12px; font-weight: 700; line-height: 1.45; text-decoration: none; transition: background .2s ease, border-color .2s ease; }
+.dashboard-youtube-link:hover { border-color: #e05b75; background: #49202e; }
+.dashboard-youtube-link svg { width: 17px; height: 17px; flex: 0 0 17px; fill: #ff526b; }
+.dashboard-plano-vazio { margin: 0 0 20px; padding: 18px; border: 1px dashed #55435f; border-radius: 12px; color: #c4b8d0; background: #17121b; line-height: 1.6; }
+.dashboard-cta-plano:disabled { cursor: wait; opacity: .65; }
 .dashboard-cta-plano { width: fit-content; margin-top: 22px; background: #8033e9; }
 .dashboard-plano-resumo { margin-top: 18px; padding: 18px; border: 1px solid #42334e; border-radius: 12px; color: #e6d8f6; background: #141018; line-height: 1.6; }
 .dashboard-evolucao-media { display: flex; align-items: baseline; gap: 10px; margin: 12px 0 22px; }
@@ -81,4 +108,13 @@
   .dashboard-dados-resumo div { grid-template-columns: 1fr auto; align-items: center; text-align: left; }
   .dashboard-card-plano { align-items: flex-start; flex-direction: column; }
   .dashboard-evolucao-linha { grid-template-columns: 88px minmax(0, 1fr) 38px; gap: 8px; }
+  .dashboard-aba-plano { padding: 20px 16px; border-radius: 16px; }
+  .dashboard-cronograma { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .dashboard-dia-card { padding: 20px; }
+  .dashboard-youtube-link { align-items: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-area-principal { scroll-behavior: auto; }
+  .dashboard-dia-card, .dashboard-youtube-link { transition: none; }
 }

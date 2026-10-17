@@ -1,7 +1,7 @@
 const supabase = require('../config/supabase');
 
 exports.registerUser = async (req, res) => {
-  const { name, email, password, role = 'STUDENT', plan = 'FREE' } = req.body;
+  const { name, email, password, role = 'STUDENT' } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios.' });
@@ -14,23 +14,37 @@ exports.registerUser = async (req, res) => {
       password,
     });
 
-    if (authError) return res.status(400).json({ error: authError.message });
+    if (authError) {
+      const authErrorText = `${authError.code || ''} ${authError.message || ''}`;
+      const emailAlreadyExists = /already[_ ]?(?:registered|exists)|user[_ ]already[_ ]exists|email[_ ]exists|email.*taken/i.test(authErrorText);
+      return res.status(emailAlreadyExists ? 409 : 400).json({
+        error: emailAlreadyExists ? 'E-mail já cadastrado. Tente entrar ou use outro e-mail.' : authError.message,
+      });
+    }
+
+    const authUser = authData?.user;
+    if (!authUser?.id || (Array.isArray(authUser.identities) && authUser.identities.length === 0)) {
+      return res.status(409).json({ error: 'E-mail já cadastrado. Tente entrar ou use outro e-mail.' });
+    }
 
     // Insere perfil na tabela pública 'users'
     const { data: userData, error: userError } = await supabase
       .from('users')
       .insert([
         {
-          id: authData.user.id,
+          id: authUser.id,
           name,
           email,
           role,
-          plan
+          plan: 'FREE',
         }
       ])
       .select();
 
-    if (userError) return res.status(400).json({ error: userError.message });
+    if (userError) {
+      console.error('[Cadastro] Falha ao criar perfil vinculado ao usuário Auth:', userError.message);
+      return res.status(500).json({ error: 'A conta foi criada, mas não foi possível salvar o perfil. Entre em contato com o suporte.' });
+    }
 
     return res.status(201).json({
       message: 'Usuário cadastrado com sucesso!',
@@ -148,6 +162,38 @@ exports.updateOnboarding = async (req, res) => {
     return res.status(200).json({
       message: 'Dados do onboarding salvos com sucesso!',
       user: data
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.upgradeToPremium = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { data: user, error: updateError } = await supabase
+      .from('users')
+      .update({ plan: 'PREMIUM', updated_at: new Date() })
+      .eq('id', userId)
+      .select('id, name, email, role, plan')
+      .single();
+
+    if (updateError) throw updateError;
+
+    const { data: diagnostic, error: diagnosticError } = await supabase
+      .from('diagnostics')
+      .select('id')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (diagnosticError) throw diagnosticError;
+
+    return res.status(200).json({
+      message: 'Plano atualizado para PREMIUM com sucesso.',
+      user,
+      hasDiagnostic: Boolean(diagnostic),
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });

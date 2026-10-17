@@ -28,7 +28,7 @@ exports.getDashboardData = async (req, res) => {
 
     const { data: studyPlan, error: studyPlanError } = await supabase
       .from('study_plans')
-      .select('id, summary, created_at')
+      .select('id, summary, weekly_focus, schedule, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(1)
