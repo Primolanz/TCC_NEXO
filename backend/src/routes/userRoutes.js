@@ -9,6 +9,7 @@ router.post('/login', userController.loginUser);
 router.post('/refresh', userController.refreshSession);
 
 router.put('/onboarding', authMiddleware, userController.updateOnboarding);
+router.post('/upgrade', authMiddleware, userController.upgradeToPremium);
 
 // Rota protegida: retorna os dados do usuário autenticado
 router.get('/me', authMiddleware, async (req, res) => {

@@ -153,3 +153,35 @@ exports.updateOnboarding = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+exports.upgradeToPremium = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { data: user, error: updateError } = await supabase
+      .from('users')
+      .update({ plan: 'PREMIUM', updated_at: new Date() })
+      .eq('id', userId)
+      .select('id, name, email, role, plan')
+      .single();
+
+    if (updateError) throw updateError;
+
+    const { data: diagnostic, error: diagnosticError } = await supabase
+      .from('diagnostics')
+      .select('id')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (diagnosticError) throw diagnosticError;
+
+    return res.status(200).json({
+      message: 'Plano atualizado para PREMIUM com sucesso.',
+      user,
+      hasDiagnostic: Boolean(diagnostic),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};

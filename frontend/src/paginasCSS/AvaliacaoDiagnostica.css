@@ -233,8 +233,6 @@
   .dados-resumo-geral div { grid-template-columns: 1fr auto; align-items: center; }
 }
 
-}
-
 .navegacao-questoes {
   display: flex;
   align-items: center;

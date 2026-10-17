@@ -1,9 +1,22 @@
 const Groq = require('groq-sdk');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+let groqClient;
+
+function getGroqClient() {
+  const apiKey = process.env.GROQ_API_KEY?.trim();
+  if (!apiKey) {
+    const message = 'GROQ_API_KEY não foi definida. Configure GROQ_API_KEY no arquivo backend/.env e reinicie o servidor.';
+    console.error(`[Groq AI] ${message}`);
+    throw new Error(message);
+  }
+
+  if (!groqClient) groqClient = new Groq({ apiKey });
+  return groqClient;
+}
 
 exports.generateStudyPlan = async (studentData) => {
   try {
+    const groq = getGroqClient();
     // 1. Lista dos modelos de produção ativos da Groq em ordem de preferência
     const preferredModels = [
       'llama-3.1-8b-instant',
@@ -71,7 +84,14 @@ exports.generateStudyPlan = async (studentData) => {
     return JSON.parse(responseContent);
 
   } catch (error) {
-    console.error('DETALHE DO ERRO GROQ:', error);
+    const status = error.status || error.statusCode;
+    if (status === 401) {
+      const message = 'Groq rejeitou GROQ_API_KEY (HTTP 401). Verifique se a chave em backend/.env está válida e ativa.';
+      console.error(`[Groq AI] ${message}`);
+      throw new Error(message);
+    }
+
+    console.error(`[Groq AI] Falha na geração do plano${status ? ` (HTTP ${status})` : ''}: ${error.message}`);
     throw new Error(`Erro Groq AI: ${error.message}`);
   }
 };

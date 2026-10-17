@@ -2,15 +2,33 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import '../../paginasCSS/OnboardingAluno.css'
 import CabecalhoPagina from '../../componentes/CabecalhoPagina.jsx'
+import { apiClient } from '../../servicos/apiClient.js'
 
 function CheckoutPlano() {
   const [periodoSelecionado, definirPeriodoSelecionado] = useState('mensal')
   const [formaPagamento, definirFormaPagamento] = useState('cartao')
+  const [finalizando, definirFinalizando] = useState(false)
+  const [erro, definirErro] = useState('')
   const navegar = useNavigate()
 
-  function finalizarCheckout(evento) {
+  async function finalizarCheckout(evento) {
     evento.preventDefault()
-    navegar('/onboarding/aluno')
+    definirFinalizando(true)
+    definirErro('')
+
+    try {
+      const response = await apiClient('/users/upgrade', { method: 'POST' })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'Não foi possível ativar o plano Premium.')
+      }
+
+      navegar(data.hasDiagnostic ? '/inicio' : '/avaliacao/diagnostica', { replace: true })
+    } catch (error) {
+      definirErro(error.message)
+    } finally {
+      definirFinalizando(false)
+    }
   }
 
   return (
@@ -40,7 +58,7 @@ function CheckoutPlano() {
 
             <div className="plano-resumo-destaque">
               <span>Plano escolhido</span>
-              <strong>Plano Pago</strong>
+              <strong>Plano Premium</strong>
               <p>
                 {periodoSelecionado === 'mensal'
                   ? 'R$ 29,90 por mês'
@@ -57,6 +75,9 @@ function CheckoutPlano() {
           </aside>
 
           <form className="formulario-checkout" onSubmit={finalizarCheckout}>
+            <p role="note">
+              Ambiente de teste: ao confirmar, sua conta recebe o plano Premium. Nenhuma cobrança real será realizada.
+            </p>
             <fieldset className="grupo-checkout">
               <legend>1. Escolha o período</legend>
 
@@ -174,8 +195,9 @@ function CheckoutPlano() {
                 )}
                 </fieldset>
 
-            <button type="submit" className="botao-finalizar-pagamento">
-              Finalizar pagamento →
+            {erro && <p role="alert">{erro}</p>}
+            <button type="submit" className="botao-finalizar-pagamento" disabled={finalizando}>
+              {finalizando ? 'Ativando plano...' : 'Confirmar assinatura →'}
             </button>
           </form>
         </div>

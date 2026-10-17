@@ -1,9 +1,10 @@
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+
 const express = require('express');
 const cors = require('cors');
 const studyPlanRoutes = require('./routes/studyPlanRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
-
-require('dotenv').config();
 
 // 1. Importação das Rotas
 const userRoutes = require('./routes/userRoutes');

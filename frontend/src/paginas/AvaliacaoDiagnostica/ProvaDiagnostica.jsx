@@ -1,9 +1,6 @@
-
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { useState } from 'react'
-import { questoesDiagnosticas } from '../../dados/questoesDiagnosticas.js'
 import '../../paginasCSS/AvaliacaoDiagnostica.css'
 import { apiClient } from '../../servicos/apiClient.js'
 
@@ -20,32 +17,51 @@ function ProvaDiagnostica() {
 
   useEffect(() => {
     let ativo = true
+
     apiClient('/diagnostics/questions')
       .then(async (response) => {
         const data = await response.json()
-        if (!response.ok) throw new Error(data.message || data.error || 'Não foi possível carregar as questões.')
+        if (!response.ok) {
+          throw new Error(data.message || data.error || 'Não foi possível carregar as questões.')
+        }
         if (!Array.isArray(data) || data.length < TOTAL_QUESTOES) {
           throw new Error(`A prova precisa de ${TOTAL_QUESTOES} questões cadastradas.`)
         }
         if (ativo) setQuestoes(data.slice(0, TOTAL_QUESTOES))
       })
-      .catch((error) => { if (ativo) setErro(error.message) })
-      .finally(() => { if (ativo) setCarregando(false) })
-    return () => { ativo = false }
+      .catch((error) => {
+        if (ativo) setErro(error.message)
+      })
+      .finally(() => {
+        if (ativo) setCarregando(false)
+      })
+
+    return () => {
+      ativo = false
+    }
   }, [])
 
   const questao = questoes[indiceAtual]
-  const respostaAtual = questao ? respostas[questao.id] : ''
-  const progresso = useMemo(() => questoes.length ? Math.round(((indiceAtual + 1) / TOTAL_QUESTOES) * 100) : 0, [indiceAtual, questoes.length])
+  const respostaAtual = questao ? respostas[questao.id] : undefined
+  const progresso = useMemo(
+    () => (questoes.length ? Math.round(((indiceAtual + 1) / TOTAL_QUESTOES) * 100) : 0),
+    [indiceAtual, questoes.length],
+  )
   const opcoes = Array.isArray(questao?.options)
-    ? questao.options.map((option, index) => typeof option === 'object'
-      ? { id: index, text: option.text ?? option.label ?? option.value ?? JSON.stringify(option) }
-      : { id: index, text: `${String.fromCharCode(65 + index)}) ${option}` })
-    : Object.entries(questao?.options || {}).map(([label, text], index) => ({ id: index, text: `${label}) ${text}` }))
+    ? questao.options.map((option, index) =>
+        typeof option === 'object'
+          ? { id: index, text: option.text ?? option.label ?? option.value ?? JSON.stringify(option) }
+          : { id: index, text: `${String.fromCharCode(65 + index)}) ${option}` },
+      )
+    : Object.entries(questao?.options || {}).map(([label, text], index) => ({
+        id: index,
+        text: `${label}) ${text}`,
+      }))
 
   async function finalizarProva() {
     setEnviando(true)
     setErro('')
+
     try {
       const respostasEnviadas = questoes.map((item) => ({
         question_id: item.id,
@@ -57,12 +73,16 @@ function ProvaDiagnostica() {
         body: JSON.stringify({ answers: respostasEnviadas }),
       })
       const resultado = await respostaDiagnostico.json()
-      if (!respostaDiagnostico.ok) throw new Error(resultado.message || resultado.error || 'Erro ao salvar o diagnóstico.')
+      if (!respostaDiagnostico.ok) {
+        throw new Error(resultado.message || resultado.error || 'Erro ao salvar o diagnóstico.')
+      }
 
       if (resultado.canGenerateAIPlan) {
         const respostaPlano = await apiClient('/study-plans/generate', { method: 'POST' })
         const plano = await respostaPlano.json()
-        if (!respostaPlano.ok) throw new Error(plano.message || plano.error || 'Diagnóstico salvo, mas não foi possível gerar o plano.')
+        if (!respostaPlano.ok) {
+          throw new Error(plano.message || plano.error || 'Diagnóstico salvo, mas não foi possível gerar o plano.')
+        }
         resultado.plan = plano.plan
       }
 
@@ -81,56 +101,12 @@ function ProvaDiagnostica() {
     if (indiceAtual < TOTAL_QUESTOES - 1) setIndiceAtual((indice) => indice + 1)
     else finalizarProva()
   }
-    const [indiceQuestaoAtual, definirIndiceQuestaoAtual] = useState(0)
-    const [respostasSelecionadas, definirRespostasSelecionadas] = useState({})
-
-    const questao = questoesDiagnosticas[indiceQuestaoAtual]
-
-    const respostaSelecionada = respostasSelecionadas[questao.id] ?? ''
-
-    const progresso = Math.round(
-      ((indiceQuestaoAtual + 1) / questoesDiagnosticas.length) * 100
-    )
-
-    function selecionarResposta(idAlternativa) {
-      definirRespostasSelecionadas((respostasAnteriores) => ({
-        ...respostasAnteriores,
-        [questao.id]: idAlternativa,
-      }))
-    }
-
-    function avancarQuestao() {
-      const ultimaQuestao =
-        indiceQuestaoAtual === questoesDiagnosticas.length - 1
-
-      if (!respostaSelecionada || ultimaQuestao) {
-        return
-      }
-
-      definirIndiceQuestaoAtual((indiceAnterior) => indiceAnterior + 1)
-    }
-
-    function voltarQuestao() {
-      if (indiceQuestaoAtual === 0) {
-        return
-      }
-
-      definirIndiceQuestaoAtual((indiceAnterior) => indiceAnterior - 1)
-    }
-
 
   return (
     <main className="pagina-prova-diagnostica">
       <section className="conteudo-prova-diagnostica">
         <div className="progresso-prova">
-
           <span>{questoes.length ? `${indiceAtual + 1}/${TOTAL_QUESTOES}` : `0/${TOTAL_QUESTOES}`}</span>
-
-          <span>
-            {questao.id}/{questoesDiagnosticas.length}
-          </span>
-
-
           <div className="area-barra-progresso">
             <span className="titulo-progresso-prova">Progresso</span>
             <div className="barra-progresso-prova" aria-label={`Progresso da prova: ${progresso}%`}>
@@ -140,8 +116,20 @@ function ProvaDiagnostica() {
           <span>{progresso}%</span>
         </div>
 
-
-        {erro && <div style={{ color: '#ef4444', backgroundColor: '#fee2e2', padding: '12px', borderRadius: '6px', marginBottom: '15px', textAlign: 'center' }}>{erro}</div>}
+        {erro && (
+          <div
+            style={{
+              color: '#ef4444',
+              backgroundColor: '#fee2e2',
+              padding: '12px',
+              borderRadius: '6px',
+              marginBottom: '15px',
+              textAlign: 'center',
+            }}
+          >
+            {erro}
+          </div>
+        )}
         {carregando && <p>Carregando questões...</p>}
         {!carregando && questao && (
           <>
@@ -153,65 +141,27 @@ function ProvaDiagnostica() {
               <p className="enunciado-questao">{questao.statement}</p>
               <div className="alternativas-questao">
                 {opcoes.map((option) => (
-                  <button key={String(option.id)} type="button" className={`alternativa-questao ${respostaAtual === option.id ? 'alternativa-questao-selecionada' : ''}`} onClick={() => setRespostas((anteriores) => ({ ...anteriores, [questao.id]: option.id }))}>
+                  <button
+                    key={String(option.id)}
+                    type="button"
+                    className={`alternativa-questao ${respostaAtual === option.id ? 'alternativa-questao-selecionada' : ''}`}
+                    onClick={() => setRespostas((anteriores) => ({ ...anteriores, [questao.id]: option.id }))}
+                  >
                     {option.text}
                   </button>
                 ))}
               </div>
             </section>
-            <button type="button" className="botao-proxima-questao" disabled={respostaAtual === undefined || respostaAtual === null || enviando} onClick={avancar}>
+            <button
+              type="button"
+              className="botao-proxima-questao"
+              disabled={respostaAtual === undefined || respostaAtual === null || enviando}
+              onClick={avancar}
+            >
               {enviando ? 'Salvando prova...' : indiceAtual < TOTAL_QUESTOES - 1 ? 'Próxima Questão →' : 'Finalizar Prova'}
             </button>
           </>
         )}
-
-        <section className="cartao-questao-diagnostica">
-          <header className="cabecalho-questao-diagnostica">
-            <h1>Questão {questao.id}</h1>
-            <span>{questao.materia}</span>
-          </header>
-
-          <p className="enunciado-questao">
-            {questao.enunciado}
-          </p>
-
-          <div className="alternativas-questao">
-            {questao.alternativas.map((alternativa) => (
-              <button
-                key={alternativa.id}
-                type="button"
-                className={`alternativa-questao ${
-                  respostaSelecionada === alternativa.id
-                    ? 'alternativa-questao-selecionada'
-                    : ''
-                }`}
-                onClick={() => selecionarResposta(alternativa.id)}
-              >
-                {alternativa.texto}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <div className="navegacao-questoes">
-          <button
-            type="button"
-            className="botao-voltar-questao"
-            onClick={voltarQuestao}
-            disabled={indiceQuestaoAtual === 0}
-          >
-            ← Voltar
-          </button>
-
-          <button
-            type="button"
-            className="botao-proxima-questao"
-            onClick={avancarQuestao}
-            disabled={!respostaSelecionada}
-          >
-            Próxima questão →
-          </button>
-        </div>
       </section>
     </main>
   )
