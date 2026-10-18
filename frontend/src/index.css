@@ -9,13 +9,24 @@
 
 * { box-sizing: border-box; }
 
-html, body, #root {
-  min-width: 320px;
-  min-height: 100vh;
-  margin: 0;
-}
-
+html, body, #root { min-width: 320px; min-height: 100vh; margin: 0; }
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 a { color: inherit; text-decoration: none; }
 img { display: block; max-width: 100%; }
+
+@keyframes fadeInSlide {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in { animation: fadeInSlide .35s cubic-bezier(.16, 1, .3, 1) forwards; }
+main { animation: fadeInSlide .35s cubic-bezier(.16, 1, .3, 1) forwards; }
+button, a, input, select, textarea { transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease, opacity .18s ease; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid #b77cff; outline-offset: 3px; }
+.dashboard-conteudo > *, .role-content > .role-metrics, .role-content > .role-panel, .role-content > .role-tab-panel { animation: fadeInSlide .35s cubic-bezier(.16, 1, .3, 1) both; }
+.role-card:hover, .role-feature-card:hover, .dashboard-card-materia:hover, .dashboard-resumo:hover, .dashboard-card-plano:hover, .dashboard-card-evolucao:hover { transform: translateY(-2px); border-color: #765194; box-shadow: 0 16px 36px #0005; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

@@ -18,7 +18,7 @@ function EscolherPlano() {
   }
 
   return (
-    <main className="pagina-escolher-plano">
+    <main className="pagina-escolher-plano animate-fade-in">
       <CabecalhoPagina nomePagina="Escolha seu plano" />
 
       <section className="conteudo-escolher-plano">

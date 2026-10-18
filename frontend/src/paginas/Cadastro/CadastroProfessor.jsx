@@ -3,21 +3,55 @@ import { Link, useNavigate } from 'react-router-dom'
 import '../../paginasCSS/Login.css'
 import CabecalhoPagina from '../../componentes/CabecalhoPagina.jsx'
 import CampoSenha from '../../componentes/CampoSenha.jsx'
+import { clearSession } from '../../servicos/apiClient.js'
 
 function CadastroProfessor() {
   const navegar = useNavigate()
   const [senha, definirSenha] = useState('')
   const [confirmarSenha, definirConfirmarSenha] = useState('')
+  const [erro, definirErro] = useState('')
+  const [carregando, definirCarregando] = useState(false)
   const senhasDiferentes = confirmarSenha.length > 0 && senha !== confirmarSenha
 
-  function cadastrarProfessor(evento) {
+  async function cadastrarProfessor(evento) {
     evento.preventDefault()
-    if (senha !== confirmarSenha) return
-    navegar('/cadastro/professor/confirmar-email')
+    definirErro('')
+    if (senha !== confirmarSenha) {
+      definirErro('As senhas precisam ser iguais.')
+      return
+    }
+
+    definirCarregando(true)
+    const form = new FormData(evento.currentTarget)
+    try {
+      const resposta = await fetch('http://localhost:3000/api/users/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.get('nome'),
+          email: form.get('email'),
+          password: senha,
+          role: 'TEACHER',
+        }),
+      })
+      const dados = await resposta.json()
+      if (!resposta.ok) throw new Error(dados.message || dados.error || 'Não foi possível criar a conta.')
+
+      // Um cadastro pendente não deve deixar uma sessão autenticada no navegador.
+      clearSession()
+      navegar('/cadastro/professor/aguardando-aprovacao', {
+        state: { mensagem: dados.message },
+        replace: true,
+      })
+    } catch (falha) {
+      definirErro(falha.message)
+    } finally {
+      definirCarregando(false)
+    }
   }
 
   return (
-    <main className="pagina-login">
+    <main className="pagina-login animate-fade-in">
       <CabecalhoPagina nomePagina="Criar conta" />
       <div className="conteudo-central-login">
         <section className="cartao-login" aria-labelledby="titulo-cadastro-professor">
@@ -28,6 +62,8 @@ function CadastroProfessor() {
             <Link className="opcao-perfil" to="/cadastro/aluno">Sou Aluno</Link>
             <Link className="opcao-perfil opcao-perfil-ativa" to="/cadastro/professor">Professor</Link>
           </nav>
+
+          {erro && <div role="alert" className="mensagem-erro-campo">{erro}</div>}
 
           <form className="formulario-login" onSubmit={cadastrarProfessor}>
             <div className="grupo-campo">
@@ -60,7 +96,9 @@ function CadastroProfessor() {
               <label className="rotulo-campo" htmlFor="materia-professor">MATÉRIA</label>
               <input className="campo-login" id="materia-professor" name="materia" type="text" placeholder="Ex.: Matemática" required />
             </div>
-            <button type="submit" className="botao-entrar">Criar conta</button>
+            <button type="submit" className="botao-entrar" disabled={carregando || senhasDiferentes}>
+              {carregando ? 'Criando conta...' : 'Criar conta'}
+            </button>
           </form>
 
           <p className="rodape-login">Já tem uma conta?<Link className="link-cadastro" to="/login/professor">Faça login aqui</Link></p>

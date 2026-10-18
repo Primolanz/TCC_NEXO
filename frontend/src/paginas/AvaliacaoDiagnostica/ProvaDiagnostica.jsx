@@ -103,7 +103,7 @@ function ProvaDiagnostica() {
   }
 
   return (
-    <main className="pagina-prova-diagnostica">
+    <main className="pagina-prova-diagnostica animate-fade-in">
       <section className="conteudo-prova-diagnostica">
         <div className="progresso-prova">
           <span>{questoes.length ? `${indiceAtual + 1}/${TOTAL_QUESTOES}` : `0/${TOTAL_QUESTOES}`}</span>

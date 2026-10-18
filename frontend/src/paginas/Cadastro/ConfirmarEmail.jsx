@@ -19,7 +19,7 @@ function ConfirmarEmail({ tipoUsuario = 'aluno' }) {
     : '/onboarding/escolher-plano'
 
   return (
-    <main className="pagina-login">
+    <main className="pagina-login animate-fade-in">
       <CabecalhoPagina nomePagina="Confirmar e-mail" />
       <div className="conteudo-central-login">
         <section className="cartao-login" aria-labelledby="titulo-confirmacao">

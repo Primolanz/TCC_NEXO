@@ -10,7 +10,7 @@ function ProvaInicialAluno() {
   }
 
   return (
-    <main className="pagina-onboarding-aluno">
+    <main className="pagina-onboarding-aluno animate-fade-in">
       <header className="cabecalho-onboarding">
         <Link
           className="logo-onboarding"

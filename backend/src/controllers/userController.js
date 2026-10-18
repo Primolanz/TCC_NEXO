@@ -2,6 +2,7 @@ const supabase = require('../config/supabase');
 
 exports.registerUser = async (req, res) => {
   const { name, email, password, role = 'STUDENT' } = req.body;
+  const normalizedRole = String(role).toUpperCase();
 
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios.' });
@@ -35,7 +36,8 @@ exports.registerUser = async (req, res) => {
           id: authUser.id,
           name,
           email,
-          role,
+          role: normalizedRole,
+          ...(normalizedRole === 'TEACHER' ? { status_approval: 'PENDING' } : {}),
           plan: 'FREE',
         }
       ])
@@ -47,9 +49,11 @@ exports.registerUser = async (req, res) => {
     }
 
     return res.status(201).json({
-      message: 'Usuário cadastrado com sucesso!',
+      message: normalizedRole === 'TEACHER'
+        ? 'Conta criada com sucesso. Seu cadastro de professor está pendente de aprovação pelo administrador.'
+        : 'Usuário cadastrado com sucesso!',
       user: userData[0],
-      session: authData.session ? {
+      session: normalizedRole !== 'TEACHER' && authData.session ? {
         access_token: authData.session.access_token,
         refresh_token: authData.session.refresh_token,
       } : null
@@ -104,6 +108,16 @@ exports.loginUser = async (req, res) => {
 
     if (userError) {
       return res.status(400).json({ error: 'Erro ao buscar perfil do usuário.' });
+    }
+
+    if (userData.role === 'TEACHER' && userData.status_approval !== 'APPROVED') {
+      const rejected = userData.status_approval === 'REJECTED';
+      return res.status(403).json({
+        error: rejected
+          ? 'O acesso à sua conta de professor foi recusado pelo administrador.'
+          : 'Sua conta de professor ainda está em análise pelo administrador.',
+        code: rejected ? 'TEACHER_REJECTED' : 'TEACHER_PENDING',
+      });
     }
 
     const [{ data: diagnostic, error: diagnosticError }, { data: studyPlan, error: planError }] = await Promise.all([

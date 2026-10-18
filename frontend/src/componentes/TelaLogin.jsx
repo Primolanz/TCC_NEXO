@@ -21,10 +21,7 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (perfilAtivo !== "aluno" || !localStorage.getItem("nexo_token")) {
-      setValidandoSessao(false);
-      return;
-    }
+    if (perfilAtivo !== "aluno" || !localStorage.getItem("nexo_token")) return;
 
     let ativo = true;
     apiClient("/dashboard")
@@ -69,26 +66,24 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
 
       // 3. Salvar o Token e dados do usuário no localStorage
       saveSession(dados.session || { access_token: tokenRecebido, refresh_token: dados.refresh_token });
-      localStorage.setItem("nexo_user", JSON.stringify(dados.user || {}));
+      const usuario = dados.user || {};
+      localStorage.setItem("nexo_user", JSON.stringify(usuario));
 
       // 4. Redirecionamento condicional inteligente
       // Dentro de manipularSubmissao na TelaLogin.jsx:
 
-      if (perfilAtivo === "aluno") {
-        // Se o servidor retornar que o onboarding/diagnostico ja foi concluido:
-        const usuario = dados.user || {};
-        const jaRespondeuFormulario = Boolean(
-          usuario.onboardingCompleted ||
-          usuario.hasDiagnostic ||
-          usuario.hasStudyPlan ||
-          (usuario.age_group && usuario.occupation && usuario.main_goal),
-        );
+      const role = String(usuario.role || "").toUpperCase();
+      const destinosPorPerfil = {
+        STUDENT: "/inicio",
+        TEACHER: "/professor/dashboard",
+        ADMIN: "/admin/dashboard",
+      };
+      const destino = destinosPorPerfil[role];
 
-        if (jaRespondeuFormulario) {
-          navigate("/inicio");
-        } else {
-          navigate("/onboarding/aluno"); // Conta nova ou incompleta, vai para as perguntas
-        }
+      if (destino) {
+        navigate(destino, { replace: true });
+      } else {
+        throw new Error("O perfil desta conta não possui um destino de acesso configurado.");
       }
     } catch (err) {
       setErro(err.message);
@@ -97,10 +92,10 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
     }
   }
 
-  if (validandoSessao) return <main className="pagina-login" aria-busy="true" />;
+  if (validandoSessao) return <main className="pagina-login animate-fade-in" aria-busy="true" />;
 
   return (
-    <main className="pagina-login">
+    <main className="pagina-login animate-fade-in">
       <CabecalhoPagina nomePagina={`Login ${titulo}`} />
       <div className="conteudo-central-login">
         <section className="cartao-login" aria-labelledby="titulo-login">
@@ -173,6 +168,10 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
               {carregando ? "Entrando..." : "Entrar no Sistema"}
             </button>
           </form>
+
+          {perfilAtivo === "aluno" && (
+            <p className="rodape-login"><Link className="link-cadastro" to="/recuperar-senha">Esqueci minha senha</Link></p>
+          )}
 
           {perfilAtivo === "aluno" ? (
             <p className="rodape-login">
