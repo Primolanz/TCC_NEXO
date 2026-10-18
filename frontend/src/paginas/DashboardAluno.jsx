@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apiClient, clearSession } from '../servicos/apiClient.js'
 import '../paginasCSS/DashboardAluno.css'
 
 const ABAS = [
   { id: 'inicio', label: 'Início' },
+  { id: 'turmas', label: 'Minhas turmas' },
+  { id: 'atividades', label: 'Atividades' },
   { id: 'resultados', label: 'Meus resultados' },
   { id: 'planos', label: 'Planos de estudo' },
   { id: 'evolucao', label: 'Evolução' },
@@ -157,14 +159,87 @@ function formatAssessmentDate(value) {
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' }).format(date)
 }
 
+function formatarDataHoraEntrega(value) {
+  const date = new Date(value)
+  if (!value || Number.isNaN(date.getTime())) return 'Sem data definida'
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    timeZone: 'America/Sao_Paulo', hourCycle: 'h23',
+  }).formatToParts(date).map(({ type, value: partValue }) => [type, partValue]))
+  return `${parts.day}/${parts.month}/${parts.year} às ${parts.hour}:${parts.minute}`
+}
+
 function DashboardAluno() {
   const [dados, setDados] = useState(null)
+  const [turmas, setTurmas] = useState([])
+  const [atividades, setAtividades] = useState([])
+  const [carregandoAtividades, setCarregandoAtividades] = useState(true)
+  const [erroAtividades, setErroAtividades] = useState('')
+  const [atividadeSelecionada, setAtividadeSelecionada] = useState(null)
+  const [enviandoConclusao, setEnviandoConclusao] = useState(false)
+  const [erroConclusao, setErroConclusao] = useState('')
+  const [codigoTurma, setCodigoTurma] = useState('')
+  const [estadoTurmas, setEstadoTurmas] = useState({ loading: true, submitting: false, message: '', error: '' })
   const [erro, setErro] = useState('')
   const [gerandoPlano, setGerandoPlano] = useState(false)
   const [erroPlano, setErroPlano] = useState('')
   const [abaAtiva, setAbaAtiva] = useState('inicio')
   const navegar = useNavigate()
   const areaPrincipalRef = useRef(null)
+
+  const carregarTurmas = useCallback(async () => {
+    const response = await apiClient('/classes/student')
+    const body = await response.json()
+    if (!response.ok) throw new Error(body.error || 'Não foi possível carregar suas turmas.')
+    setTurmas(Array.isArray(body.classes) ? body.classes : [])
+    return body.classes || []
+  }, [])
+
+  const carregarAtividades = useCallback(async () => {
+    const response = await apiClient('/assignments/student')
+    const body = await response.json()
+    if (!response.ok) throw new Error(body.error || 'Não foi possível carregar suas atividades.')
+    setAtividades(Array.isArray(body.assignments) ? body.assignments : [])
+  }, [])
+
+  async function entrarNaTurma(event) {
+    event.preventDefault()
+    setEstadoTurmas((current) => ({ ...current, submitting: true, message: '', error: '' }))
+    try {
+      const response = await apiClient('/classes/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: codigoTurma.trim().toUpperCase() }),
+      })
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.error || 'Não foi possível entrar na turma.')
+      setCodigoTurma('')
+      await carregarTurmas()
+      setEstadoTurmas((current) => ({ ...current, message: `Você entrou na turma ${body.class?.name || ''} com sucesso.`, error: '' }))
+    } catch (error) {
+      setEstadoTurmas((current) => ({ ...current, error: error.message, message: '' }))
+    } finally {
+      setEstadoTurmas((current) => ({ ...current, submitting: false }))
+    }
+  }
+
+  async function marcarComoConcluida() {
+    if (!atividadeSelecionada || atividadeSelecionada.status === 'SUBMITTED') return
+    setEnviandoConclusao(true)
+    setErroConclusao('')
+    try {
+      const response = await apiClient(`/assignments/${atividadeSelecionada.id}/submit`, { method: 'POST' })
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.error || 'Não foi possível concluir a atividade.')
+      const atualizada = { ...atividadeSelecionada, status: 'SUBMITTED' }
+      setAtividadeSelecionada(atualizada)
+      setAtividades((current) => current.map((item) => item.id === atualizada.id ? atualizada : item))
+    } catch (error) {
+      setErroConclusao(error.message)
+    } finally {
+      setEnviandoConclusao(false)
+    }
+  }
 
   useEffect(() => {
     let ativo = true
@@ -177,6 +252,36 @@ function DashboardAluno() {
       .catch((error) => { if (ativo) setErro(error.message) })
     return () => { ativo = false }
   }, [])
+
+  useEffect(() => {
+    carregarTurmas()
+      .catch((error) => setEstadoTurmas((current) => ({ ...current, error: error.message })))
+      .finally(() => setEstadoTurmas((current) => ({ ...current, loading: false })))
+  }, [carregarTurmas])
+
+  useEffect(() => {
+    if (abaAtiva !== 'atividades') return undefined
+    let ativo = true
+    const atualizar = () => {
+      carregarAtividades()
+        .catch((error) => { if (ativo) setErroAtividades(error.message) })
+        .finally(() => { if (ativo) setCarregandoAtividades(false) })
+    }
+    setCarregandoAtividades(true)
+    setErroAtividades('')
+    atualizar()
+    const intervalo = window.setInterval(atualizar, 30000)
+    return () => { ativo = false; window.clearInterval(intervalo) }
+  }, [abaAtiva, carregarAtividades])
+
+  useEffect(() => {
+    if (!atividadeSelecionada) return undefined
+    const fecharComEsc = (event) => {
+      if (event.key === 'Escape') setAtividadeSelecionada(null)
+    }
+    window.addEventListener('keydown', fecharComEsc)
+    return () => window.removeEventListener('keydown', fecharComEsc)
+  }, [atividadeSelecionada])
 
   useEffect(() => {
     areaPrincipalRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
@@ -209,8 +314,8 @@ function DashboardAluno() {
     }
   }
 
-  if (erro) return <main className="dashboard-aluno"><p className="dashboard-erro">{erro}</p></main>
-  if (!dados) return <main className="dashboard-aluno"><p className="dashboard-carregando">Carregando seu painel...</p></main>
+  if (erro) return <main className="dashboard-aluno animate-fade-in"><p className="dashboard-erro">{erro}</p></main>
+  if (!dados) return <main className="dashboard-aluno animate-fade-in"><p className="dashboard-carregando">Carregando seu painel...</p></main>
 
   const materias = [
     { key: 'portuguese', title: 'Português' },
@@ -287,7 +392,7 @@ function DashboardAluno() {
   const avaliacaoAnterior = historico[historico.length - 2]
 
   return (
-    <main className="dashboard-aluno">
+    <main className="dashboard-aluno animate-fade-in">
       <aside className="dashboard-sidebar">
         <Link className="dashboard-logo" to="/inicio">NEXO</Link>
         <nav aria-label="Navegação do aluno">
@@ -339,6 +444,47 @@ function DashboardAluno() {
               <button type="button" onClick={() => abrirAba('evolucao')}>Acompanhar evolução →</button>
             </div>
           </>}
+
+          {abaAtiva === 'turmas' && <section className="dashboard-secao" aria-labelledby="aluno-turmas-titulo">
+            <div className="dashboard-titulo-secao"><h1 id="aluno-turmas-titulo">Minhas turmas</h1><span>Acompanhe as turmas em que você está matriculado.</span></div>
+            <form className="aluno-entrar-turma" onSubmit={entrarNaTurma}>
+              <div><span className="aluno-turmas-kicker">CÓDIGO DE ACESSO</span><h2>Entrar em uma turma</h2><p>Peça o código ao seu professor para se conectar à turma.</p></div>
+              <div className="aluno-turma-form-controls"><label htmlFor="codigo-turma">Código da turma</label><div><input id="codigo-turma" value={codigoTurma} onChange={(event) => setCodigoTurma(event.target.value.toUpperCase())} placeholder="NX-XXXX" maxLength={7} autoComplete="off" required /><button type="submit" disabled={estadoTurmas.submitting}>{estadoTurmas.submitting ? 'Entrando…' : 'Entrar na turma'}</button></div></div>
+              {estadoTurmas.message && <p className="aluno-turmas-feedback sucesso" role="status">{estadoTurmas.message}</p>}
+              {estadoTurmas.error && <p className="aluno-turmas-feedback erro" role="alert">{estadoTurmas.error}</p>}
+            </form>
+            <div className="aluno-turmas-lista-cabecalho"><h2>Turmas matriculadas</h2><span>{turmas.length} {turmas.length === 1 ? 'turma' : 'turmas'}</span></div>
+            {estadoTurmas.loading ? <p className="aluno-turmas-vazio">Carregando suas turmas…</p> : turmas.length ? <div className="aluno-turmas-lista">
+              {turmas.map((turma) => <article className="aluno-turma-card" key={turma.id}>
+                <span className="aluno-turma-icone" aria-hidden="true">▦</span><div><h3>{turma.name}</h3><p>Professor: {turma.teacher_name}</p><span>{turma.classmate_count} {turma.classmate_count === 1 ? 'colega' : 'colegas'}</span></div><code>{turma.code}</code>
+              </article>)}
+            </div> : <p className="aluno-turmas-vazio">Você ainda não entrou em nenhuma turma. Insira um código acima para começar.</p>}
+          </section>}
+
+          {abaAtiva === 'atividades' && <section className="dashboard-secao" aria-labelledby="aluno-atividades-titulo">
+            <div className="dashboard-titulo-secao"><h1 id="aluno-atividades-titulo">Tarefas e atividades</h1><span>Atividades compartilhadas pelos professores das suas turmas.</span></div>
+            {erroAtividades && <p className="aluno-turmas-feedback erro" role="alert">{erroAtividades}</p>}
+            {carregandoAtividades ? <p className="aluno-turmas-vazio">Carregando atividades…</p> : atividades.length ? <div className="aluno-atividades-lista">
+              {atividades.map((atividade) => <article className="aluno-atividade-card" key={atividade.id} role="button" tabIndex={0} aria-haspopup="dialog" onClick={() => { setErroConclusao(''); setAtividadeSelecionada(atividade) }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setErroConclusao(''); setAtividadeSelecionada(atividade) } }}>
+                <header><div><span className="aluno-turmas-kicker">{atividade.class_name}</span><h2>{atividade.title}</h2></div><span className={`aluno-atividade-status ${atividade.status === 'SUBMITTED' ? 'concluida' : ''}`}>{atividade.status === 'SUBMITTED' ? 'Concluída' : 'Pendente'}</span></header>
+                <p className="aluno-atividade-descricao">{atividade.description || 'Sem instruções adicionais.'}</p>
+                <footer><span>Data e hora limite</span><strong>{formatarDataHoraEntrega(atividade.due_date)}</strong></footer>
+              </article>)}
+            </div> : <p className="aluno-turmas-vazio">Não há atividades pendentes nas suas turmas.</p>}
+            {atividadeSelecionada && <div className="aluno-atividade-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setAtividadeSelecionada(null) }}>
+              <section className="aluno-atividade-modal" role="dialog" aria-modal="true" aria-labelledby="atividade-modal-titulo">
+                <button className="aluno-atividade-modal-fechar" type="button" aria-label="Fechar detalhes" onClick={() => setAtividadeSelecionada(null)}>×</button>
+                <span className="aluno-turmas-kicker">{atividadeSelecionada.class_name}</span>
+                <h2 id="atividade-modal-titulo">{atividadeSelecionada.title}</h2>
+                <div className="aluno-atividade-modal-prazo"><span>Data e hora limite</span><strong>{formatarDataHoraEntrega(atividadeSelecionada.due_date)}</strong></div>
+                <div className="aluno-atividade-modal-conteudo"><h3>Instruções e conteúdo</h3><p>{atividadeSelecionada.description || 'O professor não adicionou instruções para esta atividade.'}</p></div>
+                {erroConclusao && <p className="aluno-turmas-feedback erro" role="alert">{erroConclusao}</p>}
+                {atividadeSelecionada.status === 'SUBMITTED'
+                  ? <p className="aluno-atividade-concluida-mensagem" role="status">Atividade marcada como concluída.</p>
+                  : <button className="aluno-atividade-concluir" type="button" onClick={marcarComoConcluida} disabled={enviandoConclusao}>{enviandoConclusao ? 'Salvando…' : 'Marcar como Concluída'}</button>}
+              </section>
+            </div>}
+          </section>}
 
           {abaAtiva === 'resultados' && <section className="dashboard-secao">
             <div className="dashboard-titulo-secao"><h1>Meus resultados</h1><span>Desempenho da avaliação mais recente</span></div>

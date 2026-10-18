@@ -32,7 +32,7 @@ function CheckoutPlano() {
   }
 
   return (
-    <main className="pagina-checkout-plano">
+    <main className="pagina-checkout-plano animate-fade-in">
       <CabecalhoPagina nomePagina="Finalizar assinatura" />
 
       <section className="conteudo-checkout-plano">

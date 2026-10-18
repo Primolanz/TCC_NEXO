@@ -10,10 +10,7 @@ function PaginaInicial() {
   const [validandoSessao, setValidandoSessao] = useState(() => Boolean(localStorage.getItem('nexo_token')))
 
   useEffect(() => {
-    if (!localStorage.getItem('nexo_token')) {
-      setValidandoSessao(false)
-      return
-    }
+    if (!localStorage.getItem('nexo_token')) return
 
     let ativo = true
     apiClient('/dashboard')
@@ -25,10 +22,10 @@ function PaginaInicial() {
     return () => { ativo = false }
   }, [navegar])
 
-  if (validandoSessao) return <main className="pagina-inicial" aria-busy="true" />
+  if (validandoSessao) return <main className="pagina-inicial animate-fade-in" aria-busy="true" />
 
   return (
-    <main className="pagina-inicial">
+    <main className="pagina-inicial animate-fade-in">
       <header className="cabecalho-inicial">
         <Link className="logo-inicial" to="/" aria-label="NEXO: página inicial">
           <img className="imagem-logo-inicial" src={imagemLogoNexo} alt="NEXO" />

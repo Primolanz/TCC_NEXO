@@ -200,6 +200,62 @@
 .dashboard-historico-vazio strong { color: #f3eaff; font-size: 15px; }
 .dashboard-historico-vazio p { margin: 8px 0 0; color: #bdb2c8; font-size: 12px; line-height: 1.6; }
 
+.aluno-entrar-turma { display: grid; gap: 18px; margin: 22px 0 30px; padding: clamp(18px, 3vw, 26px); border: 1px solid #392b45; border-radius: 16px; background: linear-gradient(145deg, #1d1726, #121015); }
+.aluno-turmas-kicker { color: #b77cff; font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+.aluno-entrar-turma h2 { margin: 7px 0; color: #f5edff; font-size: 19px; }
+.aluno-entrar-turma > div:first-child p { margin: 0; color: #aaa0b4; font-size: 12px; }
+.aluno-turma-form-controls { display: grid; gap: 8px; }
+.aluno-turma-form-controls label { color: #cfc4dc; font-size: 11px; font-weight: 700; }
+.aluno-turma-form-controls > div { display: flex; gap: 10px; }
+.aluno-turma-form-controls input { flex: 1; min-width: 0; min-height: 46px; padding: 0 13px; border: 1px solid #3d304a; border-radius: 9px; outline: none; color: #f5edff; background: #0d0b10; font-size: 13px; letter-spacing: .09em; }
+.aluno-turma-form-controls input:focus { border-color: #9255ca; }
+.aluno-turma-form-controls input::placeholder { color: #756b7e; }
+.aluno-turma-form-controls button { min-height: 46px; padding: 0 17px; border: 1px solid #9056cd; border-radius: 9px; color: white; background: linear-gradient(120deg, #7136b0, #512981); font-size: 12px; font-weight: 800; transition: filter .2s ease, transform .2s ease; }
+.aluno-turma-form-controls button:hover { transform: translateY(-1px); filter: brightness(1.13); }
+.aluno-turma-form-controls button:disabled { cursor: wait; opacity: .65; }
+.aluno-turmas-feedback { margin: 0; padding: 11px 13px; border: 1px solid; border-radius: 9px; font-size: 12px; }
+.aluno-turmas-feedback.sucesso { border-color: #387967; color: #b2f0d5; background: #17352e; }
+.aluno-turmas-feedback.erro { border-color: #743f48; color: #ffc1bc; background: #321d24; }
+.aluno-turmas-lista-cabecalho { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 20px 0 12px; }
+.aluno-turmas-lista-cabecalho h2 { margin: 0; color: #f3eaff; font-size: 16px; }
+.aluno-turmas-lista-cabecalho > span { color: #9c91a7; font-size: 11px; }
+.aluno-turmas-lista { display: grid; gap: 11px; }
+.aluno-turma-card { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 13px; padding: 16px; border: 1px solid #382b43; border-radius: 13px; background: #17121c; }
+.aluno-turma-icone { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid #62458a; border-radius: 13px; color: #ddc3ff; background: linear-gradient(145deg, #342148, #21182c); font-size: 19px; }
+.aluno-turma-card h3 { margin: 0 0 5px; color: #f2e8ff; font-size: 13px; }
+.aluno-turma-card p { margin: 0 0 4px; color: #bdb4c7; font-size: 11px; }
+.aluno-turma-card > div > span { color: #978ba3; font-size: 10px; }
+.aluno-turma-card code { padding: 6px 9px; border: 1px solid #55416c; border-radius: 7px; color: #e2caff; background: #241a2e; font-size: 10px; font-weight: 800; letter-spacing: .08em; }
+.aluno-turmas-vazio { padding: 20px; border: 1px dashed #55435f; border-radius: 13px; color: #aaa0b4; background: #17121b; font-size: 12px; text-align: center; }
+.aluno-atividades-lista { display: grid; gap: 14px; }
+.aluno-atividade-card { padding: 20px; border: 1px solid #392b45; border-radius: 15px; background: linear-gradient(145deg, #1d1726, #121015); }
+.aluno-atividade-card { cursor: pointer; text-align: left; transition: transform .2s ease, border-color .2s ease, background .2s ease; }
+.aluno-atividade-card:hover, .aluno-atividade-card:focus-visible { transform: translateY(-2px); border-color: #8051a8; outline: none; background: linear-gradient(145deg, #241a31, #15121b); }
+.aluno-atividade-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.aluno-atividade-card h2 { margin: 7px 0 0; color: #f5edff; font-size: 17px; }
+.aluno-atividade-status { padding: 6px 10px; border: 1px solid #75643d; border-radius: 999px; color: #f1d995; background: #302817; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.aluno-atividade-status.concluida { border-color: #387967; color: #b2f0d5; background: #17352e; }
+.aluno-atividade-descricao { margin: 17px 0; color: #c2b8ce; font-size: 12px; line-height: 1.7; white-space: pre-wrap; }
+.aluno-atividade-card .aluno-atividade-descricao { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.aluno-atividade-card > footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding-top: 12px; border-top: 1px solid #302738; }
+.aluno-atividade-card > footer span { color: #978ba3; font-size: 10px; }
+.aluno-atividade-card > footer strong { color: #e2caff; font-size: 11px; }
+.aluno-atividade-modal-backdrop { position: fixed; z-index: 50; inset: 0; display: grid; overflow-y: auto; padding: 22px; place-items: center; background: #05040be8; backdrop-filter: blur(8px); animation: fadeInSlide .2s ease both; }
+.aluno-atividade-modal { position: relative; width: min(100%, 620px); max-height: min(820px, calc(100vh - 44px)); overflow-y: auto; padding: clamp(22px, 4vw, 34px); border: 1px solid #49375a; border-radius: 20px; color: #eee8f4; background: linear-gradient(145deg, #1e1728, #121015); box-shadow: 0 28px 90px #000b; animation: fadeInSlide .25s ease both; }
+.aluno-atividade-modal-fechar { position: absolute; top: 16px; right: 16px; display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid #44364f; border-radius: 10px; color: #d4c8df; background: #211b29; font-size: 23px; line-height: 1; }
+.aluno-atividade-modal-fechar:hover { border-color: #8e5bd0; color: #fff; }
+.aluno-atividade-modal > h2 { max-width: calc(100% - 40px); margin: 8px 0 21px; color: #fbf7ff; font-size: clamp(20px, 4vw, 27px); line-height: 1.3; overflow-wrap: anywhere; }
+.aluno-atividade-modal-prazo { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 13px 15px; border: 1px solid #3d304a; border-radius: 11px; background: #17121c; }
+.aluno-atividade-modal-prazo span { color: #aaa0b4; font-size: 11px; }
+.aluno-atividade-modal-prazo strong { color: #d9baff; font-size: 12px; }
+.aluno-atividade-modal-conteudo { margin: 19px 0 22px; padding: 18px; border: 1px solid #34283d; border-radius: 12px; background: #17121b; }
+.aluno-atividade-modal-conteudo h3 { margin: 0 0 11px; color: #f1e7fb; font-size: 13px; }
+.aluno-atividade-modal-conteudo p { margin: 0; color: #c4bacd; font-size: 13px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.aluno-atividade-concluir { display: inline-flex; min-height: 45px; align-items: center; justify-content: center; padding: 0 18px; border: 1px solid #408a6f; border-radius: 10px; color: #edfff7; background: linear-gradient(120deg, #207154, #15513f); font-size: 12px; font-weight: 800; transition: filter .2s ease, transform .2s ease; }
+.aluno-atividade-concluir:hover { transform: translateY(-1px); filter: brightness(1.12); }
+.aluno-atividade-concluir:disabled { cursor: wait; opacity: .65; }
+.aluno-atividade-concluida-mensagem { margin: 0; padding: 12px 14px; border: 1px solid #387967; border-radius: 10px; color: #b2f0d5; background: #17352e; font-size: 12px; }
+
 @media (max-width: 760px) {
   .dashboard-sidebar { padding: 19px 16px 12px; }
   .dashboard-sidebar nav { gap: 8px; margin-top: 18px; }
@@ -210,6 +266,12 @@
 }
 
 @media (max-width: 560px) {
+  .aluno-atividade-card > header { flex-direction: column; }
+  .aluno-atividade-modal-backdrop { padding: 12px; }
+  .aluno-atividade-modal { max-height: calc(100vh - 24px); }
+  .aluno-turma-form-controls > div { align-items: stretch; flex-direction: column; }
+  .aluno-turma-card { grid-template-columns: 42px minmax(0, 1fr); }
+  .aluno-turma-card > code { grid-column: 2; justify-self: start; }
   .dashboard-resumo-cabecalho { align-items: flex-start; flex-direction: column; }
   .dashboard-dados-resumo { grid-template-columns: 1fr; }
   .dashboard-metrica { grid-template-columns: 42px minmax(0, 1fr) auto; }

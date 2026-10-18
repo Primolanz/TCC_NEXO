@@ -3,10 +3,13 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const authMiddleware = require('../middlewares/auth');
 const supabase = require('../config/supabase'); // Importante!
+const passwordController = require('../controllers/passwordController');
 
 router.post('/register', userController.registerUser);
 router.post('/login', userController.loginUser);
 router.post('/refresh', userController.refreshSession);
+router.post('/password/recovery', passwordController.requestReset);
+router.put('/password', authMiddleware, passwordController.updatePassword);
 
 router.put('/onboarding', authMiddleware, userController.updateOnboarding);
 router.post('/upgrade', authMiddleware, userController.upgradeToPremium);

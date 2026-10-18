@@ -71,7 +71,7 @@ function CadastroAluno() {
   }
 
   return (
-    <main className="pagina-login">
+    <main className="pagina-login animate-fade-in">
       <CabecalhoPagina nomePagina="Criar conta" />
       <div className="conteudo-central-login">
         <section

@@ -14,7 +14,7 @@ function ResultadoDiagnostico() {
 
   if (etapa === 'confirmacao') {
     return (
-      <main className="pagina-prova-diagnostica pagina-resultado-diagnostico">
+      <main className="pagina-prova-diagnostica pagina-resultado-diagnostico animate-fade-in">
         <section className="conteudo-prova-diagnostica">
           <article className="cartao-resultado-confirmacao">
             <span className="icone-resultado-confirmacao" aria-hidden="true">✓</span>
@@ -64,7 +64,7 @@ function ResultadoDiagnostico() {
   }
 
   return (
-    <main className="pagina-prova-diagnostica pagina-resultado-diagnostico">
+    <main className="pagina-prova-diagnostica pagina-resultado-diagnostico animate-fade-in">
       <section className="conteudo-prova-diagnostica">
         <header className="cabecalho-resultados">
           <p>PROVA DIAGNÓSTICA</p>

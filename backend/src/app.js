@@ -5,6 +5,9 @@ const express = require('express');
 const cors = require('cors');
 const studyPlanRoutes = require('./routes/studyPlanRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const classRoutes = require('./routes/classRoutes');
+const assignmentRoutes = require('./routes/assignmentRoutes');
 
 // 1. Importação das Rotas
 const userRoutes = require('./routes/userRoutes');
@@ -24,6 +27,9 @@ app.use('/api/diagnostics', diagnosticFormsRoutes);
 
 // dashboard
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/classes', classRoutes);
+app.use('/api/assignments', assignmentRoutes);
 
 // 5. Inicialização do Servidor
 const PORT = process.env.PORT || 3000;

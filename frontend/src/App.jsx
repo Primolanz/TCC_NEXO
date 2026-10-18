@@ -15,15 +15,48 @@ import ObjetivosAluno from './paginas/OnboardingAluno/ObjetivosAluno.jsx'
 import ProvaInicialAluno from './paginas/OnboardingAluno/ProvaInicialAluno.jsx'
 import ProvaDiagnostica from './paginas/AvaliacaoDiagnostica/ProvaDiagnostica.jsx'
 import ResultadoDiagnostico from './paginas/AvaliacaoDiagnostica/ResultadoDiagnostico.jsx'
+import DashboardProfessor from './paginas/DashboardProfessor.jsx'
+import DashboardAdmin from './paginas/DashboardAdmin.jsx'
+import { ForgotPassword, UpdatePassword } from './paginas/PasswordFlow.jsx'
+
+const rotaPorPerfil = { STUDENT: '/inicio', TEACHER: '/professor/dashboard', ADMIN: '/admin/dashboard' }
+
+function RotaProtegida({ role, children }) {
+  const token = localStorage.getItem('nexo_token')
+  const user = (() => {
+    try { return JSON.parse(localStorage.getItem('nexo_user') || '{}') } catch { return {} }
+  })()
+  const userRole = String(user.role || '').toUpperCase()
+
+  if (!token || !userRole) return <Navigate to={role === 'STUDENT' ? '/login' : `/login/${role === 'TEACHER' ? 'professor' : 'administrador'}`} replace />
+  if (userRole !== role) return <Navigate to={rotaPorPerfil[userRole] || '/'} replace />
+  if (role === 'TEACHER' && user.status_approval !== 'APPROVED') return <Navigate to="/login/professor" replace />
+  return children
+}
+
+function RotaAutenticada({ children }) {
+  const token = localStorage.getItem('nexo_token')
+  const user = (() => {
+    try { return JSON.parse(localStorage.getItem('nexo_user') || '{}') } catch { return {} }
+  })()
+  if (!token || !user.role) return <Navigate to="/login" replace />
+  if (String(user.role).toUpperCase() === 'TEACHER' && user.status_approval !== 'APPROVED') return <Navigate to="/login/professor" replace />
+  return children
+}
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<PaginaInicial />} />
-      <Route path="/inicio" element={<DashboardAluno />} />
+      <Route path="/inicio" element={<RotaProtegida role="STUDENT"><DashboardAluno /></RotaProtegida>} />
+      <Route path="/professor/dashboard" element={<RotaProtegida role="TEACHER"><DashboardProfessor /></RotaProtegida>} />
+      <Route path="/admin/dashboard" element={<RotaProtegida role="ADMIN"><DashboardAdmin /></RotaProtegida>} />
       <Route path="/login" element={<Login />} />
       <Route path="/login/professor" element={<LoginProfessor />} />
       <Route path="/login/administrador" element={<LoginAdministrador />} />
+      <Route path="/recuperar-senha" element={<ForgotPassword />} />
+      <Route path="/redefinir-senha" element={<UpdatePassword recovery />} />
+      <Route path="/alterar-senha" element={<RotaAutenticada><UpdatePassword /></RotaAutenticada>} />
 
       <Route path="/cadastro/aluno" element={<CadastroAluno />} />
       <Route path="/cadastro/professor" element={<CadastroProfessor />} />
