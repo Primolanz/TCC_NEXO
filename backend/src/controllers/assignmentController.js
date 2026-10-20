@@ -171,21 +171,21 @@ exports.submitAssignment = async (req, res) => {
     const { data: submission, error: saveError } = existing
       ? await supabase
         .from('assignment_submissions')
-        .update({ status: 'SUBMITTED' })
+        .update({ status: 'SUBMITTED', submitted_at: new Date().toISOString() })
         .eq('assignment_id', assignment.id)
         .eq('student_id', req.user.id)
         .select('assignment_id, student_id, status')
         .single()
       : await supabase
         .from('assignment_submissions')
-        .insert({ assignment_id: assignment.id, student_id: req.user.id, status: 'SUBMITTED' })
+        .insert({ assignment_id: assignment.id, student_id: req.user.id, status: 'SUBMITTED', submitted_at: new Date().toISOString() })
         .select('assignment_id, student_id, status')
         .single();
     if (saveError) {
       if (saveError.code === '23505') {
         const { data: updated, error: updateError } = await supabase
           .from('assignment_submissions')
-          .update({ status: 'SUBMITTED' })
+          .update({ status: 'SUBMITTED', submitted_at: new Date().toISOString() })
           .eq('assignment_id', assignment.id)
           .eq('student_id', req.user.id)
           .select('assignment_id, student_id, status')

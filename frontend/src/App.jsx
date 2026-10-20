@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import PaginaInicial from './paginas/PaginaInicial.jsx'
 import DashboardAluno from './paginas/DashboardAluno.jsx'
 import Login from './paginas/Login/Login.jsx'
@@ -18,19 +19,49 @@ import ResultadoDiagnostico from './paginas/AvaliacaoDiagnostica/ResultadoDiagno
 import DashboardProfessor from './paginas/DashboardProfessor.jsx'
 import DashboardAdmin from './paginas/DashboardAdmin.jsx'
 import { ForgotPassword, UpdatePassword } from './paginas/PasswordFlow.jsx'
+import { apiClient } from './servicos/apiClient.js'
 
 const rotaPorPerfil = { STUDENT: '/inicio', TEACHER: '/professor/dashboard', ADMIN: '/admin/dashboard' }
 
 function RotaProtegida({ role, children }) {
   const token = localStorage.getItem('nexo_token')
-  const user = (() => {
+  const cachedUser = (() => {
     try { return JSON.parse(localStorage.getItem('nexo_user') || '{}') } catch { return {} }
   })()
+  const [access, setAccess] = useState({ loading: role === 'STUDENT' && Boolean(token), user: cachedUser, error: '' })
+  const [retry, setRetry] = useState(0)
+
+  useEffect(() => {
+    if (!token || role !== 'STUDENT') {
+      setAccess({ loading: false, user: cachedUser, error: '' })
+      return undefined
+    }
+    let active = true
+    setAccess((current) => ({ ...current, loading: true, error: '' }))
+    apiClient('/users/me').then(async (response) => {
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.error || 'Não foi possível validar o onboarding.')
+      if (!active) return
+      localStorage.setItem('nexo_user', JSON.stringify(body.user))
+      setAccess({ loading: false, user: body.user, error: '' })
+    }).catch((error) => {
+      if (active) setAccess({ loading: false, user: cachedUser, error: error.message })
+    })
+    return () => { active = false }
+  }, [token, role, retry])
+
+  if (!token) return <Navigate to={role === 'STUDENT' ? '/login' : `/login/${role === 'TEACHER' ? 'professor' : 'administrador'}`} replace />
+  if (access.loading) return <main className="dashboard-carregando-rota" role="status">Validando seu acesso…</main>
+  if (access.error && role === 'STUDENT') return <main className="dashboard-carregando-rota"><p role="alert">{access.error}</p><button type="button" onClick={() => setRetry((value) => value + 1)}>Tentar novamente</button></main>
+  const user = access.user || cachedUser
   const userRole = String(user.role || '').toUpperCase()
 
-  if (!token || !userRole) return <Navigate to={role === 'STUDENT' ? '/login' : `/login/${role === 'TEACHER' ? 'professor' : 'administrador'}`} replace />
+  if (!userRole) return <Navigate to={role === 'STUDENT' ? '/login' : `/login/${role === 'TEACHER' ? 'professor' : 'administrador'}`} replace />
   if (userRole !== role) return <Navigate to={rotaPorPerfil[userRole] || '/'} replace />
   if (role === 'TEACHER' && user.status_approval !== 'APPROVED') return <Navigate to="/login/professor" replace />
+  if (role === 'STUDENT' && !user.onboardingCompleted) {
+    return <Navigate to={user.hasProfile ? '/onboarding/aluno/prova-inicial' : '/onboarding/aluno'} replace />
+  }
   return children
 }
 
@@ -45,8 +76,11 @@ function RotaAutenticada({ children }) {
 }
 
 function App() {
+  const location = useLocation()
+
   return (
-    <Routes>
+    <div key={`${location.pathname}${location.search}`} className="route-transition">
+    <Routes location={location}>
       <Route path="/" element={<PaginaInicial />} />
       <Route path="/inicio" element={<RotaProtegida role="STUDENT"><DashboardAluno /></RotaProtegida>} />
       <Route path="/professor/dashboard" element={<RotaProtegida role="TEACHER"><DashboardProfessor /></RotaProtegida>} />
@@ -75,6 +109,7 @@ function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </div>
   )
 }
 

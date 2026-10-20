@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apiClient, clearSession } from '../servicos/apiClient.js'
-import imagemLogoNexo from '../assets/NEXO_LOGO-sem-fundo.png'
+import MenuPerfil from './MenuPerfil.jsx'
+import MarcaNexo from './MarcaNexo.jsx'
 import '../paginasCSS/RoleDashboard.css'
 
 function RoleDashboard({ role, title, eyebrow, subtitle, sections = [], metrics = [], navigation, renderContent }) {
@@ -37,16 +38,11 @@ function RoleDashboard({ role, title, eyebrow, subtitle, sections = [], metrics 
     return () => { active = false }
   }, [navigate, role])
 
-  function signOut() {
-    clearSession()
-    navigate('/', { replace: true })
-  }
-
   return (
     <main className={`dashboard-aluno role-dashboard role-dashboard-${role.toLowerCase()} animate-fade-in`}>
       <aside className="dashboard-sidebar role-sidebar">
         <Link className="role-logo" to={role === 'TEACHER' ? '/professor/dashboard' : '/admin/dashboard'} aria-label="NEXO início">
-          <img src={imagemLogoNexo} alt="NEXO" />
+          <MarcaNexo variant="sidebar" />
         </Link>
         <nav aria-label={`Navegação da ${title}`}>
           {(navigation || sections).map((item) => navigation
@@ -64,10 +60,10 @@ function RoleDashboard({ role, title, eyebrow, subtitle, sections = [], metrics 
       <div className="dashboard-area-principal role-main">
         <header className="dashboard-cabecalho">
           <div className="dashboard-area-aluno-badge">
-            <span className="dashboard-avatar-aluno" aria-hidden="true">{title.slice(0, 1)}</span>
+            <MarcaNexo variant="header" />
             <span><small>ESPAÇO NEXO</small><strong>{title}</strong></span>
           </div>
-          <button className="dashboard-botao-sair" type="button" onClick={signOut}>Sair</button>
+          <MenuPerfil user={user} role={role} />
         </header>
 
         <section className="dashboard-conteudo role-content">

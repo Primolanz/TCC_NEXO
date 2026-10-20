@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import '../../paginasCSS/AvaliacaoDiagnostica.css'
 import { apiClient } from '../../servicos/apiClient.js'
@@ -13,21 +13,28 @@ function ProvaDiagnostica() {
   const [carregando, setCarregando] = useState(true)
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
+  const [topicosAdaptativos, setTopicosAdaptativos] = useState([])
   const navegar = useNavigate()
+  const [searchParams] = useSearchParams()
+  const isRetake = searchParams.get('mode') === 'retake'
 
   useEffect(() => {
     let ativo = true
 
-    apiClient('/diagnostics/questions')
+    apiClient(isRetake ? '/quiz/retake' : '/diagnostics/questions')
       .then(async (response) => {
         const data = await response.json()
         if (!response.ok) {
           throw new Error(data.message || data.error || 'Não foi possível carregar as questões.')
         }
-        if (!Array.isArray(data) || data.length < TOTAL_QUESTOES) {
+        const questions = isRetake ? data.questions : data
+        if (!Array.isArray(questions) || questions.length < TOTAL_QUESTOES) {
           throw new Error(`A prova precisa de ${TOTAL_QUESTOES} questões cadastradas.`)
         }
-        if (ativo) setQuestoes(data.slice(0, TOTAL_QUESTOES))
+        if (ativo) {
+          setQuestoes(questions.slice(0, TOTAL_QUESTOES))
+          setTopicosAdaptativos(isRetake ? data.adaptive_topics || [] : [])
+        }
       })
       .catch((error) => {
         if (ativo) setErro(error.message)
@@ -39,7 +46,7 @@ function ProvaDiagnostica() {
     return () => {
       ativo = false
     }
-  }, [])
+  }, [isRetake])
 
   const questao = questoes[indiceAtual]
   const respostaAtual = questao ? respostas[questao.id] : undefined
@@ -67,7 +74,7 @@ function ProvaDiagnostica() {
         question_id: item.id,
         selected_option: respostas[item.id],
       }))
-      const respostaDiagnostico = await apiClient('/diagnostics/submit', {
+      const respostaDiagnostico = await apiClient(isRetake ? '/quiz/retake/submit' : '/diagnostics/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ answers: respostasEnviadas }),
@@ -77,7 +84,7 @@ function ProvaDiagnostica() {
         throw new Error(resultado.message || resultado.error || 'Erro ao salvar o diagnóstico.')
       }
 
-      if (resultado.canGenerateAIPlan) {
+      if (!isRetake && resultado.canGenerateAIPlan) {
         const respostaPlano = await apiClient('/study-plans/generate', { method: 'POST' })
         const plano = await respostaPlano.json()
         if (!respostaPlano.ok) {
@@ -86,10 +93,13 @@ function ProvaDiagnostica() {
         resultado.plan = plano.plan
       }
 
+      resultado.assessmentType = isRetake ? 'RETAKE' : 'INITIAL'
       localStorage.setItem('nexo_diagnostic_result', JSON.stringify(resultado))
+      if (isRetake) localStorage.setItem('nexo_retake_result', JSON.stringify(resultado))
+      else localStorage.removeItem('nexo_retake_result')
       localStorage.removeItem('nexo_onboarding_perfil')
       localStorage.removeItem('nexo_onboarding_objetivo')
-      navegar('/avaliacao/resultado', { state: { resultado, etapa: 'confirmacao' } })
+      navegar('/avaliacao/resultado', { state: { resultado, etapa: 'confirmacao', assessmentType: resultado.assessmentType } })
     } catch (error) {
       setErro(error.message)
     } finally {
@@ -105,6 +115,7 @@ function ProvaDiagnostica() {
   return (
     <main className="pagina-prova-diagnostica animate-fade-in">
       <section className="conteudo-prova-diagnostica">
+        {isRetake && <p className="aviso-questionario-adaptativo">{carregando ? 'Preparando um simulado sob medida para você!' : topicosAdaptativos.length ? `Você vai encontrar questões novas sobre ${topicosAdaptativos.join(', ')} e outros conteúdos que estudou.` : 'Tudo certo: este simulado reúne questões novas de Português e Matemática.'}</p>}
         <div className="progresso-prova">
           <span>{questoes.length ? `${indiceAtual + 1}/${TOTAL_QUESTOES}` : `0/${TOTAL_QUESTOES}`}</span>
           <div className="area-barra-progresso">

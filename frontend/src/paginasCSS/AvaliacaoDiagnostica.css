@@ -58,7 +58,7 @@
   height: 100%;
   border-radius: inherit;
   background: #8033e9;
-  transition: width 0.25s ease;
+  transition: width .5s ease-out;
 }
 
 .cartao-questao-diagnostica {
@@ -123,6 +123,13 @@
     border-color 0.2s ease,
     background-color 0.2s ease,
     transform 0.2s ease;
+}
+
+.alternativa-questao:nth-child(5) {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: 50%;
+  margin: 0 auto;
 }
 
 .alternativa-questao:hover {
@@ -220,6 +227,11 @@
   .alternativas-questao {
     grid-template-columns: 1fr;
     gap: 14px;
+  }
+
+  .alternativa-questao:nth-child(5) {
+    grid-column: auto;
+    max-width: 100%;
   }
 
   .botao-proxima-questao {

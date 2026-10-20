@@ -14,7 +14,9 @@ exports.getQuestions = async (req, res) => {
   try {
     const { data: questions, error } = await supabase
       .from('questions')
-      .select('id, subject, topic, statement, options');
+      .select('id, subject, topic, statement, options')
+      .eq('module', 'INITIAL')
+      .eq('is_initial', true);
     if (error) throw error;
     return res.status(200).json(questions);
   } catch (error) {
@@ -32,7 +34,9 @@ exports.submitDiagnostic = async (req, res) => {
 
     const { data: questions, error: questionsError } = await supabase
       .from('questions')
-      .select('id, subject, topic, statement, correct_option');
+      .select('id, subject, topic, statement, correct_option')
+      .eq('module', 'INITIAL')
+      .eq('is_initial', true);
     if (questionsError) throw questionsError;
 
     const { data: user, error: userError } = await supabase
@@ -80,7 +84,7 @@ exports.submitDiagnostic = async (req, res) => {
     const weakTopics = Object.entries(weakTopicsMap).map(([topic, errorsCount]) => ({ topic, errorsCount }));
     const { data: diagnostic, error: diagnosticError } = await supabase
       .from('diagnostics')
-      .insert({ user_id: userId, score, weak_topics: weakTopics })
+      .insert({ user_id: userId, score, weak_topics: weakTopics, module: 'INITIAL' })
       .select()
       .single();
     if (diagnosticError) throw diagnosticError;

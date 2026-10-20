@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { apiClient, clearSession } from '../servicos/apiClient.js'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { apiClient } from '../servicos/apiClient.js'
 import '../paginasCSS/DashboardAluno.css'
+import CheckoutPremiumModal from '../componentes/CheckoutPremiumModal.jsx'
+import MenuPerfil from '../componentes/MenuPerfil.jsx'
+import MarcaNexo from '../componentes/MarcaNexo.jsx'
 
 const ABAS = [
   { id: 'inicio', label: 'Início' },
@@ -183,7 +186,13 @@ function DashboardAluno() {
   const [erro, setErro] = useState('')
   const [gerandoPlano, setGerandoPlano] = useState(false)
   const [erroPlano, setErroPlano] = useState('')
-  const [abaAtiva, setAbaAtiva] = useState('inicio')
+  const [erroProgressoPlano, setErroProgressoPlano] = useState('')
+  const [progressoSalvando, setProgressoSalvando] = useState(null)
+  const [topicoEvolucaoSelecionado, setTopicoEvolucaoSelecionado] = useState(null)
+  const [planoDiaSelecionado, setPlanoDiaSelecionado] = useState(null)
+  const location = useLocation()
+  const [abaAtiva, setAbaAtiva] = useState(() => location.state?.openTab || 'inicio')
+  const [checkoutPremiumOpen, setCheckoutPremiumOpen] = useState(false)
   const navegar = useNavigate()
   const areaPrincipalRef = useRef(null)
 
@@ -287,10 +296,17 @@ function DashboardAluno() {
     areaPrincipalRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
   }, [abaAtiva])
 
-  function sair() {
-    clearSession()
-    navegar('/', { replace: true })
-  }
+  useEffect(() => {
+    if (!topicoEvolucaoSelecionado && !planoDiaSelecionado) return undefined
+    const fecharComEsc = (event) => {
+      if (event.key === 'Escape') {
+        setTopicoEvolucaoSelecionado(null)
+        setPlanoDiaSelecionado(null)
+      }
+    }
+    window.addEventListener('keydown', fecharComEsc)
+    return () => window.removeEventListener('keydown', fecharComEsc)
+  }, [topicoEvolucaoSelecionado, planoDiaSelecionado])
 
   function abrirAba(aba) {
     setAbaAtiva(aba)
@@ -306,11 +322,38 @@ function DashboardAluno() {
       if (!response.ok) {
         throw new Error(body.message || body.error || 'Não foi possível gerar seu plano de estudos.')
       }
-      setDados((atuais) => ({ ...atuais, study_plan: body.plan }))
+      setDados((atuais) => ({ ...atuais, study_plan: body.plan, study_plan_progress: [] }))
     } catch (error) {
       setErroPlano(error.message)
     } finally {
       setGerandoPlano(false)
+    }
+  }
+
+  async function alternarDiaEstudado(dayIndex) {
+    if (!dados?.study_plan?.id) return
+    const current = (dados.study_plan_progress || []).find((item) => Number(item.day_index) === dayIndex)
+    const completed = !current?.completed_at
+    setProgressoSalvando(dayIndex)
+    setErroProgressoPlano('')
+    try {
+      const response = await apiClient('/study-plans/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ study_plan_id: dados.study_plan.id, day_index: dayIndex, completed }),
+      })
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.error || 'Não foi possível atualizar seu progresso.')
+      setDados((value) => ({
+        ...value,
+        study_plan_progress: [...(value.study_plan_progress || []).filter((item) => Number(item.day_index) !== dayIndex), body.progress],
+      }))
+      return true
+    } catch (error) {
+      setErroProgressoPlano(error.message)
+      return false
+    } finally {
+      setProgressoSalvando(null)
     }
   }
 
@@ -389,12 +432,15 @@ function DashboardAluno() {
   const planoEstudos = normalizeStudyPlan(dados.study_plan)
   const historico = Array.isArray(dados.history) ? dados.history : []
   const avaliacaoAtual = historico[historico.length - 1]
-  const avaliacaoAnterior = historico[historico.length - 2]
+  const avaliacaoInicial = historico.find((item) => item.assessment_type === 'INITIAL')
+  const retomadas = historico.filter((item) => item.assessment_type === 'RETAKE')
+  const avaliacaoRetomada = retomadas[retomadas.length - 1]
+  const topicosRetomada = avaliacaoRetomada?.topics || []
 
   return (
     <main className="dashboard-aluno animate-fade-in">
       <aside className="dashboard-sidebar">
-        <Link className="dashboard-logo" to="/inicio">NEXO</Link>
+        <Link className="dashboard-logo" to="/inicio" aria-label="NEXO início"><MarcaNexo variant="sidebar" /></Link>
         <nav aria-label="Navegação do aluno">
           {ABAS.map((aba) => (
             <button
@@ -413,15 +459,10 @@ function DashboardAluno() {
       <div className="dashboard-area-principal" ref={areaPrincipalRef}>
         <header className="dashboard-cabecalho">
           <div className="dashboard-area-aluno-badge">
-            <span className="dashboard-avatar-aluno" aria-hidden="true">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5" /><path d="M4.5 20c.7-3.5 3.2-5.4 7.5-5.4s6.8 1.9 7.5 5.4" /></svg>
-            </span>
+            <MarcaNexo variant="header" />
             <span><small>ESPAÇO NEXO</small><strong>Área do aluno</strong></span>
           </div>
-          <button className="dashboard-botao-sair" type="button" onClick={sair}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5M14 8l4 4-4 4m4-4H9" /></svg>
-            Sair
-          </button>
+          <MenuPerfil user={dados.user} role="STUDENT" />
         </header>
         <section className="dashboard-conteudo">
           {abaAtiva === 'inicio' && <>
@@ -490,6 +531,7 @@ function DashboardAluno() {
             <div className="dashboard-titulo-secao"><h1>Meus resultados</h1><span>Desempenho da avaliação mais recente</span></div>
             {cardsMaterias}
             {resumoGeral}
+            <button className="dashboard-cta-plano" type="button" onClick={() => navegar('/avaliacao/diagnostica?mode=retake')}>Refazer Questionário de Diagnóstico</button>
           </section>}
 
           {abaAtiva === 'planos' && <section className="dashboard-aba-plano">
@@ -498,8 +540,8 @@ function DashboardAluno() {
               <h1>Planos de estudo</h1>
             </header>
             {planoFree ? <>
-              <p>Seu diagnóstico está salvo. Faça upgrade para desbloquear um plano de estudos personalizado com IA.</p>
-              <Link className="dashboard-cta-plano" to="/onboarding/checkout">Conhecer opções de upgrade →</Link>
+              <p>Seu diagnóstico está salvo. Conheça o Premium para montar um plano de estudos que combina com seus objetivos.</p>
+              <button className="dashboard-cta-plano" type="button" onClick={() => setCheckoutPremiumOpen(true)}>Assinar Premium →</button>
             </> : <>
               <p>Plano atual: {dados.user?.plan || 'PREMIUM'}</p>
               {!dados.hasDiagnostic ? <>
@@ -512,19 +554,24 @@ function DashboardAluno() {
                   {planoEstudos.summary && <p>{planoEstudos.summary}</p>}
                 </article>}
                 {planoEstudos.schedule.length > 0 ? <div className="dashboard-cronograma">
-                  {planoEstudos.schedule.map((item, index) => <article className="dashboard-dia-card" key={`${item.day}-${index}`}>
-                    <div className="dashboard-dia-cabecalho">
-                      <span className="dashboard-dia-indice">{index + 1}</span>
-                      <div>
-                        <p>{item.day}</p>
-                        <h2>{item.topic}</h2>
+                  {planoEstudos.schedule.map((item, index) => {
+                    const estudado = Boolean((dados.study_plan_progress || []).find((progress) => Number(progress.day_index) === index)?.completed_at)
+                    return <article className={`dashboard-dia-card ${estudado ? 'dashboard-dia-estudado' : ''}`} key={`${item.day}-${index}`}>
+                    <button className="dashboard-dia-conteudo" type="button" onClick={() => setPlanoDiaSelecionado({ item, index, estudado })} aria-label={`Ler conteúdo: ${item.topic}`}>
+                      <div className="dashboard-dia-cabecalho">
+                        <span className="dashboard-dia-indice">{index + 1}</span>
+                        <div>
+                          <p>{item.day}</p>
+                          <h2>{item.topic}</h2>
+                        </div>
                       </div>
-                    </div>
-                    {item.subject && <span className={`dashboard-materia-badge ${subjectBadgeClass(item.subject)}`}>{item.subject}</span>}
-                    {item.goal && <div className="dashboard-dia-meta">
-                      <span>OBJETIVO DO DIA</span>
-                      <p>{item.goal}</p>
-                    </div>}
+                      {item.subject && <span className={`dashboard-materia-badge ${subjectBadgeClass(item.subject)}`}>{item.subject}</span>}
+                      {item.goal && <div className="dashboard-dia-meta">
+                        <span>OBJETIVO DO DIA</span>
+                        <p>{item.goal}</p>
+                      </div>}
+                      <span className="dashboard-dia-ler-mais">Abrir conteúdo e dicas →</span>
+                    </button>
                     {item.youtube_query && <a
                       className="dashboard-youtube-link"
                       href={`https://www.youtube.com/results?search_query=${encodeURIComponent(item.youtube_query)}`}
@@ -536,11 +583,13 @@ function DashboardAluno() {
                       </svg>
                       Buscar “{item.youtube_query}” no YouTube
                     </a>}
-                  </article>)}
+                    <button className="dashboard-marcar-estudado" type="button" onClick={() => alternarDiaEstudado(index)} disabled={progressoSalvando === index} aria-pressed={estudado}>{progressoSalvando === index ? 'Salvando…' : estudado ? '✓ Conteúdo estudado' : 'Marcar como estudado'}</button>
+                  </article>})}
                 </div> : <p className="dashboard-plano-vazio">{dados.study_plan ? 'O plano salvo ainda não contém um cronograma diário estruturado.' : 'Seu plano de estudos ainda não foi gerado.'}</p>}
+                {erroProgressoPlano && <p className="dashboard-erro-progresso" role="alert">{erroProgressoPlano}</p>}
                 {erroPlano && <p role="alert">{erroPlano}</p>}
                 <button className="dashboard-cta-plano" type="button" onClick={gerarPlanoEstudos} disabled={gerandoPlano}>
-                  {gerandoPlano ? 'Gerando plano...' : dados.study_plan ? 'Gerar novo plano com IA' : 'Gerar Plano de Estudos com IA'}
+                  {gerandoPlano ? 'Preparando seu plano...' : dados.study_plan ? 'Criar novo plano de estudos' : 'Montar meu plano de estudos'}
                 </button>
               </>}
             </>}
@@ -553,9 +602,9 @@ function DashboardAluno() {
                 <h1>Sua evolução</h1>
                 <p>Compare seus resultados e acompanhe seu progresso por matéria.</p>
               </div>
-              <Link className="dashboard-cta-evolucao" to="/avaliacao/diagnostica">
+              <Link className="dashboard-cta-evolucao" to="/avaliacao/diagnostica?mode=retake">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4.5 15a8 8 0 0 0 14 2M4 17v-5h5m10.5-3a8 8 0 0 0-14-2" /></svg>
-                Refazer Avaliação Diagnóstica
+                Refazer Questionário de Diagnóstico
               </Link>
             </header>
 
@@ -576,14 +625,14 @@ function DashboardAluno() {
                 })}
               </div>
 
-              {avaliacaoAnterior && avaliacaoAtual ? <section className="dashboard-comparacao-materias">
+              {avaliacaoInicial && avaliacaoRetomada ? <><article className="dashboard-comparacao-geral"><div><span>Pontuação inicial</span><strong>{avaliacaoInicial.overall_average}%</strong></div><b aria-hidden="true">→</b><div><span>Nova pontuação</span><strong>{avaliacaoRetomada.overall_average}%</strong></div></article><section className="dashboard-comparacao-materias">
                 <div className="dashboard-comparacao-titulo">
-                  <div><span>COMPARATIVO</span><h2>Desempenho por matéria</h2></div>
-                  <p>{avaliacaoAnterior.label} → {avaliacaoAtual.label}</p>
+                  <div><span>EVOLUÇÃO APÓS OS ESTUDOS</span><h2>Inicial × Nova pontuação</h2></div>
+                  <p>{avaliacaoInicial.label} → {avaliacaoRetomada.label}</p>
                 </div>
                 {materias.map(({ key, title }) => {
-                  const anterior = avaliacaoAnterior.subjects?.[key]?.score
-                  const atual = avaliacaoAtual.subjects?.[key]?.score
+                  const anterior = avaliacaoInicial.subjects?.[key]?.score
+                  const atual = avaliacaoRetomada.subjects?.[key]?.score
                   const temComparacao = anterior !== null && anterior !== undefined && atual !== null && atual !== undefined
                   const diferenca = temComparacao ? Number(atual) - Number(anterior) : null
                   return <article className="dashboard-comparacao-linha" key={key}>
@@ -596,8 +645,8 @@ function DashboardAluno() {
                         : <span>Sem dados comparáveis</span>}
                     </div>
                     <div className="dashboard-comparacao-valores">
-                      <span>{avaliacaoAnterior.label}: {temComparacao ? `${anterior}%` : '—'}</span>
-                      <span>{avaliacaoAtual.label}: {temComparacao ? `${atual}%` : '—'}</span>
+                      <span>Inicial: {temComparacao ? `${anterior}%` : '—'}</span>
+                      <span>Nova: {temComparacao ? `${atual}%` : '—'}</span>
                     </div>
                     <div className="dashboard-comparacao-barras" aria-label={`Comparação de ${title}`}>
                       <span><i className="dashboard-barra-anterior" style={{ width: `${Math.max(0, Math.min(100, Number(anterior) || 0))}%` }} /></span>
@@ -606,7 +655,27 @@ function DashboardAluno() {
                   </article>
                 })}
                 <div className="dashboard-legenda-comparacao"><span><i className="dashboard-legenda-anterior" />Avaliação anterior</span><span><i className="dashboard-legenda-atual" />Avaliação recente</span></div>
-              </section> : <div className="dashboard-historico-vazio">
+              </section><section className="dashboard-comparacao-topicos" aria-labelledby="comparacao-topicos-titulo">
+                <h3 id="comparacao-topicos-titulo">Evolução por tópico</h3>
+                {materias.map(({ key, title }) => {
+                  const topicosMateria = topicosRetomada.filter((topicResult) => topicResult.subject === key)
+                  if (!topicosMateria.length) return null
+                  return <div className="dashboard-topicos-materia" key={key}>
+                    <h4>{title}</h4>
+                    <div className="dashboard-topicos-grid">{topicosMateria.map((topicResult) => {
+                  const normalizeTopic = (value) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+                  const initialTopic = (avaliacaoInicial.topics || []).find((item) => item.subject === topicResult.subject && normalizeTopic(item.topic) === normalizeTopic(topicResult.topic))
+                  const subjectLabel = title
+                  return <button type="button" className="dashboard-topico-comparacao" key={`${topicResult.subject}-${topicResult.topic}`} onClick={() => setTopicoEvolucaoSelecionado({ ...topicResult, initialScore: initialTopic?.score ?? null, subjectLabel })}>
+                    <div><strong>{topicResult.topic}</strong><small>{subjectLabel}</small></div>
+                    <span>Inicial: {initialTopic ? `${initialTopic.score}%` : 'Sem base'}</span>
+                    <strong className="dashboard-topico-nova-pontuacao">Nova: {topicResult.score}%</strong>
+                    <span className="dashboard-topico-barra" aria-hidden="true"><i style={{ width: `${Math.max(0, Math.min(100, Number(topicResult.score) || 0))}%` }} /></span>
+                  </button>
+                    })}</div>
+                  </div>
+                })}
+              </section></> : <div className="dashboard-historico-vazio">
                 <strong>Seu histórico está começando</strong>
                 <p>Depois de refazer a avaliação, você verá aqui a comparação dos resultados por matéria.</p>
               </div>}
@@ -617,6 +686,34 @@ function DashboardAluno() {
           </section>}
         </section>
       </div>
+      {checkoutPremiumOpen && <CheckoutPremiumModal onClose={() => setCheckoutPremiumOpen(false)} onSuccess={(user) => { setDados((current) => ({ ...current, user: { ...current?.user, ...user, plan: 'PREMIUM' } })); setAbaAtiva('inicio'); setCheckoutPremiumOpen(false); navegar('/inicio', { replace: true }) }} />}
+      {topicoEvolucaoSelecionado && <div className="aluno-atividade-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setTopicoEvolucaoSelecionado(null) }}>
+        <section className="aluno-atividade-modal dashboard-detalhe-modal" role="dialog" aria-modal="true" aria-labelledby="topico-detalhe-titulo">
+          <button className="aluno-atividade-modal-fechar" type="button" onClick={() => setTopicoEvolucaoSelecionado(null)} aria-label="Fechar detalhes">×</button>
+          <span className="dashboard-modal-kicker">EVOLUÇÃO POR TÓPICO · {topicoEvolucaoSelecionado.subjectLabel}</span>
+          <h2 id="topico-detalhe-titulo">{topicoEvolucaoSelecionado.topic}</h2>
+          <div className="dashboard-topico-metricas">
+            <div><span>Pontuação inicial</span><strong>{topicoEvolucaoSelecionado.initialScore === null ? '—' : `${topicoEvolucaoSelecionado.initialScore}%`}</strong></div>
+            <div><span>Nova pontuação</span><strong>{topicoEvolucaoSelecionado.score}%</strong></div>
+          </div>
+          <p className="dashboard-topico-recomendacao">{topicoEvolucaoSelecionado.initialScore === null
+            ? `Seu diagnóstico inicial não avaliou ${topicoEvolucaoSelecionado.topic}. Continue praticando para acompanhar seu domínio deste conteúdo.`
+            : `Sua pontuação em ${topicoEvolucaoSelecionado.topic} ${Number(topicoEvolucaoSelecionado.score) > Number(topicoEvolucaoSelecionado.initialScore) ? `subiu de ${topicoEvolucaoSelecionado.initialScore}% para ${topicoEvolucaoSelecionado.score}%` : Number(topicoEvolucaoSelecionado.score) < Number(topicoEvolucaoSelecionado.initialScore) ? `foi de ${topicoEvolucaoSelecionado.initialScore}% para ${topicoEvolucaoSelecionado.score}%` : `permaneceu em ${topicoEvolucaoSelecionado.score}%`}. ${Number(topicoEvolucaoSelecionado.score) >= 80 ? 'Você demonstra bom domínio; mantenha a revisão para consolidar o aprendizado.' : 'Recomendamos revisar este conteúdo e praticar exercícios relacionados para avançar.'}`}</p>
+          <span className={`dashboard-topico-status ${Number(topicoEvolucaoSelecionado.score) >= 80 ? 'dominado' : Number(topicoEvolucaoSelecionado.score) >= 50 ? 'em-progresso' : 'revisar'}`}>{Number(topicoEvolucaoSelecionado.score) >= 80 ? 'Bom domínio' : Number(topicoEvolucaoSelecionado.score) >= 50 ? 'Em progresso' : 'Revisar conteúdo'}</span>
+        </section>
+      </div>}
+      {planoDiaSelecionado && <div className="aluno-atividade-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPlanoDiaSelecionado(null) }}>
+        <section className="aluno-atividade-modal dashboard-detalhe-modal" role="dialog" aria-modal="true" aria-labelledby="plano-dia-titulo">
+          <button className="aluno-atividade-modal-fechar" type="button" onClick={() => setPlanoDiaSelecionado(null)} aria-label="Fechar conteúdo">×</button>
+          <span className="dashboard-modal-kicker">{planoDiaSelecionado.item.day || `DIA ${planoDiaSelecionado.index + 1}`}</span>
+          <h2 id="plano-dia-titulo">{planoDiaSelecionado.item.topic}</h2>
+          {planoDiaSelecionado.item.subject && <span className={`dashboard-materia-badge ${subjectBadgeClass(planoDiaSelecionado.item.subject)}`}>{planoDiaSelecionado.item.subject}</span>}
+          <div className="aluno-atividade-modal-conteudo"><h3>O que estudar</h3><p>{planoDiaSelecionado.item.goal || `Estude os conceitos fundamentais de ${planoDiaSelecionado.item.topic}, observe exemplos resolvidos e pratique aplicando o conteúdo em exercícios.`}</p></div>
+          <div className="aluno-atividade-modal-conteudo dashboard-dica-pratica"><h3>Dica prática</h3><p>{String(planoDiaSelecionado.item.subject || '').toLowerCase().includes('mat') ? 'Resolva os exercícios passo a passo e confira cada cálculo. Ao errar, identifique em qual etapa o raciocínio mudou.' : 'Leia exemplos com atenção, destaque as ideias principais e tente explicar o conceito com suas próprias palavras.'}</p></div>
+          {planoDiaSelecionado.item.youtube_query && <a className="dashboard-youtube-link" href={`https://www.youtube.com/results?search_query=${encodeURIComponent(planoDiaSelecionado.item.youtube_query)}`} target="_blank" rel="noopener noreferrer">Buscar “{planoDiaSelecionado.item.youtube_query}” no YouTube</a>}
+          <button className="dashboard-marcar-estudado dashboard-modal-marcar" type="button" onClick={async () => { const saved = await alternarDiaEstudado(planoDiaSelecionado.index); if (saved) setPlanoDiaSelecionado((current) => current ? { ...current, estudado: !current.estudado } : null) }} disabled={progressoSalvando === planoDiaSelecionado.index} aria-pressed={planoDiaSelecionado.estudado}>{progressoSalvando === planoDiaSelecionado.index ? 'Salvando…' : planoDiaSelecionado.estudado ? '✓ Conteúdo estudado' : 'Marcar como estudado'}</button>
+        </section>
+      </div>}
     </main>
   )
 }
