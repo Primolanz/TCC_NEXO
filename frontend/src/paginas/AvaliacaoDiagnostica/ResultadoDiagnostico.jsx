@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import '../../paginasCSS/AvaliacaoDiagnostica.css'
 
@@ -8,8 +8,15 @@ function ResultadoDiagnostico() {
   const [etapa, setEtapa] = useState(state?.etapa || 'resultado')
   let resultado = state?.resultado
   if (!resultado) {
-    try { resultado = JSON.parse(localStorage.getItem('nexo_diagnostic_result') || 'null') } catch { resultado = null }
+    try { resultado = JSON.parse(localStorage.getItem(state?.assessmentType === 'RETAKE' ? 'nexo_retake_result' : 'nexo_diagnostic_result') || 'null') } catch { resultado = null }
   }
+  const isRetake = (state?.assessmentType || resultado?.assessmentType) === 'RETAKE'
+
+  useEffect(() => {
+    if (etapa !== 'confirmacao' || !isRetake) return undefined
+    const timeout = window.setTimeout(() => navegar('/inicio', { replace: true, state: { openTab: 'resultados' } }), 2400)
+    return () => window.clearTimeout(timeout)
+  }, [etapa, isRetake, navegar])
   if (!resultado) return <Navigate to="/avaliacao/diagnostica" replace />
 
   if (etapa === 'confirmacao') {
@@ -18,10 +25,10 @@ function ResultadoDiagnostico() {
         <section className="conteudo-prova-diagnostica">
           <article className="cartao-resultado-confirmacao">
             <span className="icone-resultado-confirmacao" aria-hidden="true">✓</span>
-            <h1>Questionário concluído!</h1>
-            <p>Parabéns! você completou todas as questões. Vamos ver como você foi!</p>
-            <button className="botao-resultado-principal" type="button" onClick={() => setEtapa('resultado')}>
-              Ver resultados →
+            <h1>{isRetake ? 'Novo diagnóstico concluído!' : 'Questionário concluído!'}</h1>
+            <p>{isRetake ? `Você acertou ${resultado.correctAnswers} de ${resultado.totalQuestions} questões (${resultado.overall_average}%). Confira sua evolução no histórico.` : 'Parabéns! você completou todas as questões. Vamos ver como você foi!'}</p>
+            <button className="botao-resultado-principal" type="button" onClick={() => isRetake ? navegar('/inicio', { replace: true, state: { openTab: 'resultados' } }) : setEtapa('resultado')}>
+              {isRetake ? 'Ver evolução agora →' : 'Ver resultados →'}
             </button>
           </article>
         </section>
@@ -89,7 +96,7 @@ function ResultadoDiagnostico() {
         <button className="botao-resultado-principal" type="button" onClick={() => navegar('/inicio')}>
           Continuar para o início →
         </button>
-        <p className="link-voltar-resultados"><Link to="/avaliacao/diagnostica">Refazer prova</Link></p>
+        <p className="link-voltar-resultados"><Link to="/avaliacao/diagnostica?mode=retake">Refazer Questionário de Diagnóstico</Link></p>
       </section>
     </main>
   )

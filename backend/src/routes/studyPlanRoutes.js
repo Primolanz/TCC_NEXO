@@ -7,5 +7,6 @@ const authMiddleware = require('../middlewares/auth');
 router.post('/generate', authMiddleware, studyPlanController.generatePlan);
 
 router.get('/me', authMiddleware, studyPlanController.getMyPlan);
+router.post('/progress', authMiddleware, studyPlanController.updateStudyProgress);
 
 module.exports = router;

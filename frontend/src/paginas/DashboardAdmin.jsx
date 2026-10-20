@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Clock3, UserRoundCheck, UsersRound } from 'lucide-react'
 import RoleDashboard from '../componentes/RoleDashboard.jsx'
 import { apiClient } from '../servicos/apiClient.js'
 
@@ -6,6 +7,7 @@ const navigation = [
   { id: 'inicio', title: 'Início' },
   { id: 'aprovacoes', title: 'Aprovação de Professores' },
   { id: 'usuarios', title: 'Gestão de Usuários' },
+  { id: 'relatorios', title: 'Relatório Global' },
 ]
 
 function DashboardAdmin() {
@@ -74,7 +76,7 @@ function DashboardAdmin() {
       return <>
         <div className="role-metrics admin-metrics">
           {cards.map((card) => <article className={`role-card admin-metric-card admin-${card.tone}`} key={card.title}>
-            <span className="role-card-icon" aria-hidden="true">{card.icon}</span>
+            <span className="role-card-icon" aria-hidden="true">{card.tone === 'violet' ? <UsersRound size={20} strokeWidth={1.8} /> : card.tone === 'amber' ? <Clock3 size={20} strokeWidth={1.8} /> : <UserRoundCheck size={20} strokeWidth={1.8} />}</span>
             <p>{card.title}</p><strong>{card.value}</strong><span className="role-badge">{card.badge}</span>
           </article>)}
         </div>
@@ -83,9 +85,17 @@ function DashboardAdmin() {
             <div><span className="role-kicker">CENTRAL DE GESTÃO</span><h2>Visão geral da plataforma</h2><p>{overview.metrics.totalUsers || 0} usuários cadastrados no NEXO.</p></div>
             <span className="role-badge">Atualizado agora</span>
           </div>
-          <button className="admin-overview-link" type="button" onClick={() => goToTab('aprovacoes')}>
-            <span className="role-card-icon" aria-hidden="true">✓</span><span><strong>Revisar solicitações de professores</strong><small>{overview.metrics.pendingTeachers || 0} aguardando sua decisão</small></span><b aria-hidden="true">→</b>
-          </button>
+          <div className="admin-shortcut-grid">
+            <button className="admin-overview-link" type="button" onClick={() => goToTab('aprovacoes')}>
+              <span className="role-card-icon" aria-hidden="true">✓</span><span className="admin-shortcut-copy"><strong>Revisar solicitações de professores</strong><small>Aprove ou recuse novos cadastros.</small></span><span className="admin-shortcut-count">{overview.metrics.pendingTeachers || 0}<small>pendentes</small></span>
+            </button>
+            <button className="admin-overview-link" type="button" onClick={() => goToTab('usuarios')}>
+              <span className="role-card-icon" aria-hidden="true">♙</span><span className="admin-shortcut-copy"><strong>Gestão de Usuários</strong><small>Pesquise e consulte contas.</small></span><span className="admin-shortcut-count">{overview.metrics.totalUsers || 0}<small>contas</small></span>
+            </button>
+            <button className="admin-overview-link" type="button" onClick={() => goToTab('relatorios')}>
+              <span className="role-card-icon role-icon-teal" aria-hidden="true">▤</span><span className="admin-shortcut-copy"><strong>Relatório Global</strong><small>Veja os indicadores da plataforma.</small></span><b className="admin-shortcut-arrow" aria-hidden="true">→</b>
+            </button>
+          </div>
         </section>
       </>
     }
@@ -106,6 +116,16 @@ function DashboardAdmin() {
           </div>
         </article>)}
       </div> : <div className="role-empty-state"><span className="role-empty-icon">✓</span><strong>Tudo em dia</strong><p>Não há solicitações pendentes de aprovação.</p></div>}
+    </section>
+
+    if (activeTab === 'relatorios') return <section className="role-tab-panel admin-tab-panel" aria-labelledby="relatorio-global-titulo">
+      <header className="role-panel-heading"><div><span className="role-kicker">INDICADORES</span><h2 id="relatorio-global-titulo">Relatório Global</h2><p>Resumo das contas e da aprovação de professores na plataforma.</p></div><span className="role-badge">Visão geral</span></header>
+      <div className="role-report-metrics admin-global-metrics">
+        <article><span>Contas cadastradas</span><strong>{overview.metrics.totalUsers || 0}</strong></article>
+        <article><span>Alunos</span><strong>{overview.metrics.students || 0}</strong></article>
+        <article><span>Professores aprovados</span><strong>{overview.metrics.approvedTeachers || 0}</strong></article>
+        <article><span>Professores aguardando análise</span><strong>{overview.metrics.pendingTeachers || 0}</strong></article>
+      </div>
     </section>
 
     return <section className="role-tab-panel admin-tab-panel">

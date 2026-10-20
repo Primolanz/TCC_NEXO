@@ -19,6 +19,7 @@ function buildAssessment(diagnostic, answers, questionMap) {
     portuguese: { correct: 0, total: 0, strengths: new Set(), weaknesses: new Set() },
     math: { correct: 0, total: 0, strengths: new Set(), weaknesses: new Set() },
   };
+  const topicTotals = new Map();
   let correctAnswers = 0;
 
   for (const answer of answers) {
@@ -26,6 +27,14 @@ function buildAssessment(diagnostic, answers, questionMap) {
     if (answer.is_correct) correctAnswers += 1;
     const key = subjectKey(question?.subject);
     if (!key) continue;
+
+    if (question?.topic) {
+      const topicKey = `${key}:${question.topic}`;
+      const topicTotal = topicTotals.get(topicKey) || { subject: key, topic: question.topic, correct: 0, total: 0 };
+      topicTotal.total += 1;
+      if (answer.is_correct) topicTotal.correct += 1;
+      topicTotals.set(topicKey, topicTotal);
+    }
 
     totals[key].total += 1;
     if (answer.is_correct) {
@@ -67,11 +76,19 @@ function buildAssessment(diagnostic, answers, questionMap) {
 
   return {
     diagnostic_id: diagnostic.id,
+    assessment_type: diagnostic.module || 'INITIAL',
     created_at: diagnostic.created_at,
     total_questions: totalQuestions,
     correct_answers: totalQuestions ? correctAnswers : 0,
     overall_average: overallAverage,
     subjects,
+    topics: [...topicTotals.values()].map((item) => ({
+      subject: item.subject,
+      topic: item.topic,
+      score: Math.round((item.correct / item.total) * 100),
+      correct: item.correct,
+      total: item.total,
+    })),
   };
 }
 
@@ -88,10 +105,9 @@ exports.getDashboardData = async (req, res) => {
     const [diagnosticsResult, studyPlanResult] = await Promise.all([
       supabase
         .from('diagnostics')
-        .select('id, score, created_at')
+        .select('id, score, created_at, module')
         .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(2),
+        .order('created_at', { ascending: false }),
       supabase
         .from('study_plans')
         .select('id, summary, weekly_focus, schedule, created_at')
@@ -104,6 +120,11 @@ exports.getDashboardData = async (req, res) => {
     if (studyPlanResult.error) throw studyPlanResult.error;
 
     const diagnostics = diagnosticsResult.data || [];
+    const latestStudyPlan = studyPlanResult.data;
+    const { data: studyProgress, error: progressError } = latestStudyPlan
+      ? await supabase.from('study_plan_progress').select('day_index, topic, subject, completed_at').eq('study_plan_id', latestStudyPlan.id).eq('user_id', userId)
+      : { data: [], error: null };
+    if (progressError) throw progressError;
     const diagnosticIds = diagnostics.map((item) => item.id);
     let answers = [];
     let questionMap = new Map();
@@ -141,10 +162,11 @@ exports.getDashboardData = async (req, res) => {
       portuguese: subjects.portuguese.weaknesses || [],
       math: subjects.math.weaknesses || [],
     };
-    const history = [...snapshots].reverse().map((assessment, index) => ({
-      ...assessment,
-      label: `Prova ${index + 1}`,
-    }));
+    let retakeNumber = 0;
+    const history = [...snapshots].reverse().map((assessment) => {
+      if (assessment.assessment_type === 'RETAKE') retakeNumber += 1;
+      return { ...assessment, label: assessment.assessment_type === 'RETAKE' ? `Retomada ${retakeNumber}` : 'Avaliação inicial' };
+    });
 
     return res.status(200).json({
       user: {
@@ -153,7 +175,8 @@ exports.getDashboardData = async (req, res) => {
         plan: user.plan || 'FREE',
       },
       hasDiagnostic: Boolean(current),
-      study_plan: studyPlanResult.data,
+      study_plan: latestStudyPlan,
+      study_plan_progress: studyProgress || [],
       subjects,
       weak_topics: weakTopics,
       total_questions: current?.total_questions || 0,

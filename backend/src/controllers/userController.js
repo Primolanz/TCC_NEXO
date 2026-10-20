@@ -121,7 +121,7 @@ exports.loginUser = async (req, res) => {
     }
 
     const [{ data: diagnostic, error: diagnosticError }, { data: studyPlan, error: planError }] = await Promise.all([
-      supabase.from('diagnostics').select('id').eq('user_id', authData.user.id).limit(1).maybeSingle(),
+      supabase.from('diagnostics').select('id').eq('user_id', authData.user.id).eq('module', 'INITIAL').limit(1).maybeSingle(),
       supabase.from('study_plans').select('id').eq('user_id', authData.user.id).limit(1).maybeSingle(),
     ]);
     if (diagnosticError) throw diagnosticError;
@@ -140,12 +140,37 @@ exports.loginUser = async (req, res) => {
       user: {
         ...userData,
         hasDiagnostic,
+        hasInitialDiagnostic: hasDiagnostic,
         hasStudyPlan,
-        onboardingCompleted: hasProfile || hasDiagnostic || hasStudyPlan,
+        hasProfile,
+        onboardingCompleted: hasProfile && hasDiagnostic,
       },
     });
   } catch (error) {
     return res.status(500).json({ error: 'Erro interno ao realizar login.' });
+  }
+};
+
+exports.getMyProfile = async (req, res) => {
+  try {
+    const [{ data: user, error: userError }, { data: diagnostic, error: diagnosticError }] = await Promise.all([
+      supabase.from('users').select('*').eq('id', req.user.id).maybeSingle(),
+      supabase.from('diagnostics').select('id').eq('user_id', req.user.id).eq('module', 'INITIAL').limit(1).maybeSingle(),
+    ]);
+    if (userError) throw userError;
+    if (diagnosticError) throw diagnosticError;
+    if (!user) return res.status(404).json({ error: 'Perfil de usuário não encontrado.' });
+    const hasProfile = Boolean(user.age_group && user.occupation && user.main_goal);
+    const hasInitialDiagnostic = Boolean(diagnostic);
+    return res.json({ user: {
+      ...user,
+      hasProfile,
+      hasDiagnostic: hasInitialDiagnostic,
+      hasInitialDiagnostic,
+      onboardingCompleted: hasProfile && hasInitialDiagnostic,
+    } });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Erro ao buscar perfil.' });
   }
 };
 
@@ -182,9 +207,15 @@ exports.updateOnboarding = async (req, res) => {
   }
 };
 
-exports.upgradeToPremium = async (req, res) => {
+exports.subscribePremium = async (req, res) => {
   try {
     const userId = req.user.id;
+    const { data: profile, error: profileError } = await supabase
+      .from('users').select('id, role').eq('id', userId).maybeSingle();
+    if (profileError) throw profileError;
+    if (!profile) return res.status(404).json({ error: 'Perfil de usuário não encontrado.' });
+    if (profile.role !== 'STUDENT') return res.status(403).json({ error: 'Apenas alunos podem assinar o plano Premium.' });
+
     const { data: user, error: updateError } = await supabase
       .from('users')
       .update({ plan: 'PREMIUM', updated_at: new Date() })
@@ -213,3 +244,5 @@ exports.upgradeToPremium = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+exports.upgradeToPremium = exports.subscribePremium;

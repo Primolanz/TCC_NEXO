@@ -116,3 +116,39 @@ exports.getMyPlan = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+exports.updateStudyProgress = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const studyPlanId = String(req.body?.study_plan_id || '');
+    const dayIndex = Number(req.body?.day_index);
+    const completed = Boolean(req.body?.completed);
+    if (!studyPlanId || !Number.isInteger(dayIndex) || dayIndex < 0) {
+      return res.status(400).json({ error: 'Informe o plano de estudos e o dia válido.' });
+    }
+
+    const { data: plan, error: planError } = await supabase
+      .from('study_plans').select('id, schedule').eq('id', studyPlanId).eq('user_id', userId).maybeSingle();
+    if (planError) throw planError;
+    if (!plan) return res.status(404).json({ error: 'Plano de estudos não encontrado.' });
+    if (!Array.isArray(plan.schedule) || dayIndex >= plan.schedule.length) {
+      return res.status(400).json({ error: 'Dia não encontrado no plano de estudos.' });
+    }
+    const day = plan.schedule[dayIndex] || {};
+    const topic = typeof day === 'object' ? String(day.topic || day.title || '') : '';
+    const subject = typeof day === 'object' ? String(day.subject || '') : '';
+    const { data: progress, error } = await supabase.from('study_plan_progress').upsert({
+      user_id: userId,
+      study_plan_id: studyPlanId,
+      day_index: dayIndex,
+      topic,
+      subject,
+      completed_at: completed ? new Date().toISOString() : null,
+    }, { onConflict: 'study_plan_id,day_index' }).select('study_plan_id, day_index, topic, subject, completed_at').single();
+    if (error) throw error;
+    return res.json({ progress });
+  } catch (error) {
+    console.error('[Plano de estudos] Falha ao salvar progresso:', error.message);
+    return res.status(500).json({ error: 'Não foi possível salvar o progresso do plano.' });
+  }
+};

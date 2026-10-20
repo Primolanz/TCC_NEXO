@@ -78,7 +78,7 @@ function EscolherPlano() {
           >
             <span className="selo-mais-popular">Mais popular</span>
 
-            <h2 className="titulo-plano">Plano Pago</h2>
+            <h2 className="titulo-plano">Plano Premium</h2>
 
             <p className="preco-plano">
               R$ 29,90
@@ -103,7 +103,7 @@ function EscolherPlano() {
               className="botao-escolher-plano botao-plano-pago"
               onClick={() => definirPlanoSelecionado('pago')}
             >
-              Escolher plano pago
+              Adquirir Plano Premium
             </button>
           </article>
         </div>

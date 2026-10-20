@@ -8,6 +8,8 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const classRoutes = require('./routes/classRoutes');
 const assignmentRoutes = require('./routes/assignmentRoutes');
+const quizRoutes = require('./routes/quizRoutes');
+const teacherRoutes = require('./routes/teacherRoutes');
 
 // 1. Importação das Rotas
 const userRoutes = require('./routes/userRoutes');
@@ -23,6 +25,7 @@ app.use('/api/study-plans', studyPlanRoutes);
 
 // 4. Registro das Rotas da API
 app.use('/api/users', userRoutes);
+app.use('/api/user', userRoutes);
 app.use('/api/diagnostics', diagnosticFormsRoutes);
 
 // dashboard
@@ -30,6 +33,8 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/assignments', assignmentRoutes);
+app.use('/api/quiz', quizRoutes);
+app.use('/api/teacher', teacherRoutes);
 
 // 5. Inicialização do Servidor
 const PORT = process.env.PORT || 3000;

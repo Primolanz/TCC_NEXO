@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { BookOpen, ClipboardList, UsersRound } from 'lucide-react'
 import RoleDashboard from '../componentes/RoleDashboard.jsx'
 import { apiClient } from '../servicos/apiClient.js'
 
@@ -71,6 +72,12 @@ function DashboardProfessor() {
   const [classError, setClassError] = useState('')
   const [classSuccess, setClassSuccess] = useState('')
   const [copiedCode, setCopiedCode] = useState('')
+  const [selectedStudent, setSelectedStudent] = useState(null)
+  const [studentPerformance, setStudentPerformance] = useState(null)
+  const [studentLoading, setStudentLoading] = useState(false)
+  const [studentError, setStudentError] = useState('')
+  const [classStudents, setClassStudents] = useState({})
+  const [studentsLoading, setStudentsLoading] = useState(false)
   const dataHojeISO = dataAtualFormatadaISO.slice(0, 10)
   const anoAtual = Number(dataHojeISO.slice(0, 4))
   const diasNoMes = dataEntrega.mes && dataEntrega.ano
@@ -141,6 +148,42 @@ function DashboardProfessor() {
     }
   }
 
+  async function abrirDesempenho(student, classItem) {
+    setSelectedStudent({ ...student, classItem })
+    setStudentPerformance(null)
+    setStudentError('')
+    setStudentLoading(true)
+    try {
+      const response = await apiClient(`/teacher/students/${encodeURIComponent(student.id)}/performance?class_id=${encodeURIComponent(classItem.id)}`)
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.error || 'Não foi possível carregar o desempenho.')
+      setStudentPerformance(body)
+    } catch (error) {
+      setStudentError(error.message)
+    } finally {
+      setStudentLoading(false)
+    }
+  }
+
+  async function carregarAlunos(classId) {
+    setStudentsLoading(true)
+    try {
+      const response = await apiClient(`/teacher/classes/${encodeURIComponent(classId)}/students`)
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.error || 'Não foi possível carregar os alunos.')
+      setClassStudents((current) => ({ ...current, [classId]: body.students || [] }))
+    } catch (error) {
+      setClassStudents((current) => ({ ...current, [classId]: { error: error.message } }))
+    } finally {
+      setStudentsLoading(false)
+    }
+  }
+
+  function formatarDataAluno(value) {
+    if (!value) return 'Data não registrada'
+    return new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(value)).replace(',', ' às')
+  }
+
   async function lancarAtividade(event) {
     event.preventDefault()
     const formElement = event.currentTarget
@@ -186,9 +229,12 @@ function DashboardProfessor() {
         { title: 'Atividades lançadas', value: activities.length, badge: 'Atividades', icon: '✎' },
       ]
       return <>
-        <div className="role-metrics">
-          {metrics.map((metric) => <article className="role-card" key={metric.title}>
-            <span className="role-card-icon" aria-hidden="true">{metric.icon}</span><p>{metric.title}</p><strong>{metric.value}</strong><span className="role-badge">{metric.badge}</span>
+        <div className="role-metrics teacher-metrics-grid">
+          {metrics.map((metric, index) => <article className="role-card teacher-metric-card" key={metric.title}>
+            <span className="role-card-icon" aria-hidden="true">{index === 0 ? <BookOpen size={20} strokeWidth={1.8} /> : index === 1 ? <UsersRound size={20} strokeWidth={1.8} /> : <ClipboardList size={20} strokeWidth={1.8} />}</span>
+            <p>{metric.title}</p>
+            <strong>{metric.value}</strong>
+            <button type="button" className="teacher-metric-shortcut" onClick={() => goToTab(index === 2 ? 'atividade' : 'turmas')}>{metric.badge}<span aria-hidden="true">→</span></button>
           </article>)}
         </div>
         <section className="role-panel role-quick-actions" aria-labelledby="acoes-rapidas-titulo">
@@ -219,7 +265,8 @@ function DashboardProfessor() {
         {classes.map((item) => <article className="role-list-item class-list-item" key={item.id}>
           <span className="role-card-icon" aria-hidden="true">▦</span>
           <div className="class-list-details"><strong>{item.name}</strong><small>{item.student_count || 0} {(item.student_count || 0) === 1 ? 'aluno' : 'alunos'}</small><span className="class-code"><span>Código de acesso</span><code>{item.code}</code></span></div>
-          <button className="class-copy-button" type="button" onClick={() => copiarCodigo(item.code)}>{copiedCode === item.code ? 'Copiado!' : 'Copiar código'}</button>
+          <div className="class-actions"><button className="class-copy-button" type="button" onClick={() => copiarCodigo(item.code)}>{copiedCode === item.code ? 'Copiado!' : 'Copiar código'}</button><button className="role-secondary-button" type="button" onClick={() => carregarAlunos(item.id)}>Ver alunos</button></div>
+          {classStudents[item.id] && <div className="class-student-list"><h4>Alunos matriculados</h4>{classStudents[item.id].error ? <p role="alert">{classStudents[item.id].error}</p> : classStudents[item.id].length ? classStudents[item.id].map((student) => <button type="button" className="student-row" key={student.id} onClick={() => abrirDesempenho(student, item)}><span><strong>{student.name}</strong><small>{student.email}</small></span><span className="role-badge">{student.completed_count}/{student.assignment_count} concluídas</span></button>) : <p>{studentsLoading ? 'Carregando alunos…' : 'Nenhum aluno matriculado nesta turma.'}</p>}</div>}
         </article>)}
       </div> : <div className="role-empty-state"><span className="role-empty-icon">▦</span><strong>Nenhuma turma criada</strong><p>Use o formulário acima para cadastrar sua primeira turma.</p>{classError && <button className="role-secondary-button" type="button" onClick={() => carregarTurmas().catch(() => {})}>Tentar novamente</button>}</div>}
     </section>
@@ -265,7 +312,7 @@ function DashboardProfessor() {
     </section>
   }
 
-  return <RoleDashboard role="TEACHER" title="Área do Professor" eyebrow="SEU ESPAÇO DE ENSINO" subtitle="Acompanhe suas turmas e organize sua rotina docente." navigation={navigation} renderContent={renderContent} />
+  return <><RoleDashboard role="TEACHER" title="Área do Professor" eyebrow="SEU ESPAÇO DE ENSINO" subtitle="Acompanhe suas turmas e organize sua rotina docente." navigation={navigation} renderContent={renderContent} />{selectedStudent && <div className="student-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedStudent(null) }}><section className="student-performance-panel" role="dialog" aria-modal="true" aria-labelledby="student-performance-title"><button className="student-modal-close" type="button" aria-label="Fechar" onClick={() => setSelectedStudent(null)}>×</button><span className="role-kicker">DESEMPENHO DO ALUNO · {selectedStudent.classItem.name}</span><h2 id="student-performance-title">{selectedStudent.name}</h2><p className="student-email">{selectedStudent.email}</p>{studentLoading ? <p>Carregando histórico…</p> : studentError ? <p role="alert">{studentError}</p> : studentPerformance && <><div className="student-summary"><strong>{studentPerformance.completed_count}/{studentPerformance.assignment_count}</strong><span>Atividades concluídas</span></div><h3>Histórico de atividades</h3><div className="student-assignment-list">{studentPerformance.assignments.length ? studentPerformance.assignments.map((assignment) => { const status = assignment.status === 'SUBMITTED' ? 'completed' : assignment.overdue ? 'overdue' : 'pending'; return <article className="student-assignment" key={assignment.id}><div><strong>{assignment.title}</strong><small>{assignment.due_date ? `Prazo: ${formatarDataAluno(assignment.due_date)}` : 'Sem prazo definido'}</small>{assignment.submitted_at && <small>Entregue em {formatarDataAluno(assignment.submitted_at)}</small>}</div><span className={`student-status ${status}`}>{status === 'completed' ? 'Concluída' : status === 'overdue' ? 'Atrasada' : 'Pendente'}</span></article> }) : <p>Nenhuma atividade lançada para esta turma.</p>}</div></>}</section></div>}</>
 }
 
 export default DashboardProfessor
