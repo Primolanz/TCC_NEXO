@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
+import { Menu, X } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { apiClient, clearSession } from '../servicos/apiClient.js'
 import MenuPerfil from './MenuPerfil.jsx'
 import MarcaNexo from './MarcaNexo.jsx'
 import '../paginasCSS/RoleDashboard.css'
 
-function RoleDashboard({ role, title, eyebrow, subtitle, sections = [], metrics = [], navigation, renderContent }) {
+function RoleDashboard({ role, title, eyebrow, subtitle, sections = [], metrics = [], navigation, renderContent, onTabChange }) {
   const [user, setUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('nexo_user') || '{}') } catch { return {} }
   })
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('inicio')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -40,7 +42,8 @@ function RoleDashboard({ role, title, eyebrow, subtitle, sections = [], metrics 
 
   return (
     <main className={`dashboard-aluno role-dashboard role-dashboard-${role.toLowerCase()} animate-fade-in`}>
-      <aside className="dashboard-sidebar role-sidebar">
+      {mobileMenuOpen && <button className="dashboard-mobile-overlay" type="button" aria-label="Fechar menu" onClick={() => setMobileMenuOpen(false)} />}
+      <aside className={`dashboard-sidebar role-sidebar ${mobileMenuOpen ? 'mobile-drawer-open' : ''}`}>
         <Link className="role-logo" to={role === 'TEACHER' ? '/professor/dashboard' : '/admin/dashboard'} aria-label="NEXO início">
           <MarcaNexo variant="sidebar" />
         </Link>
@@ -51,9 +54,9 @@ function RoleDashboard({ role, title, eyebrow, subtitle, sections = [], metrics 
               type="button"
               className={activeTab === item.id ? 'role-nav-active' : ''}
               aria-current={activeTab === item.id ? 'page' : undefined}
-              onClick={() => setActiveTab(item.id)}
-            >{item.title}</button>
-            : <a key={item.title} href={`#${item.id}`}>{item.title}</a>)}
+              onClick={() => { setActiveTab(item.id); onTabChange?.(item.id); setMobileMenuOpen(false) }}
+            >{item.icon && <span className="role-nav-icon" aria-hidden="true">{item.icon}</span>}<span>{item.title}</span></button>
+            : <a key={item.title} href={`#${item.id}`} onClick={() => setMobileMenuOpen(false)}>{item.icon && <span className="role-nav-icon" aria-hidden="true">{item.icon}</span>}<span>{item.title}</span></a>)}
         </nav>
       </aside>
 
@@ -64,12 +67,13 @@ function RoleDashboard({ role, title, eyebrow, subtitle, sections = [], metrics 
             <span><small>ESPAÇO NEXO</small><strong>{title}</strong></span>
           </div>
           <MenuPerfil user={user} role={role} />
+          <button className="dashboard-mobile-menu-button" type="button" aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen((open) => !open)}>{mobileMenuOpen ? <X size={21} /> : <Menu size={21} />}</button>
         </header>
 
         <section className="dashboard-conteudo role-content">
           <div className="dashboard-boas-vindas">
             <p>{eyebrow}</p>
-            <h1>Olá, {role === 'TEACHER' ? 'Professor' : 'Administrador'} {user.name || ''}!</h1>
+            <h1>Olá, {role === 'TEACHER' ? 'Professor(a)' : 'Administrador'} {user.name || ''}!</h1>
             <span>{subtitle}</span>
           </div>
 

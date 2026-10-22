@@ -10,6 +10,7 @@ const classRoutes = require('./routes/classRoutes');
 const assignmentRoutes = require('./routes/assignmentRoutes');
 const quizRoutes = require('./routes/quizRoutes');
 const teacherRoutes = require('./routes/teacherRoutes');
+const tutorRoutes = require('./routes/tutorRoutes');
 
 // 1. Importação das Rotas
 const userRoutes = require('./routes/userRoutes');
@@ -35,6 +36,7 @@ app.use('/api/classes', classRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/teacher', teacherRoutes);
+app.use('/api/chat', tutorRoutes);
 
 // 5. Inicialização do Servidor
 const PORT = process.env.PORT || 3000;

@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Clock3, UserRoundCheck, UsersRound } from 'lucide-react'
+import { ArrowLeft, Clock3, FileChartColumnIncreasing, LayoutDashboard, UserRoundCheck, UsersRound, UserCog } from 'lucide-react'
 import RoleDashboard from '../componentes/RoleDashboard.jsx'
 import { apiClient } from '../servicos/apiClient.js'
 
 const navigation = [
-  { id: 'inicio', title: 'Início' },
-  { id: 'aprovacoes', title: 'Aprovação de Professores' },
-  { id: 'usuarios', title: 'Gestão de Usuários' },
-  { id: 'relatorios', title: 'Relatório Global' },
+  { id: 'inicio', title: 'Início', icon: <LayoutDashboard /> },
+  { id: 'aprovacoes', title: 'Aprovação de Professores', icon: <UserRoundCheck /> },
+  { id: 'usuarios', title: 'Gestão de Usuários', icon: <UserCog /> },
+  { id: 'relatorios', title: 'Relatório Global', icon: <FileChartColumnIncreasing /> },
 ]
 
 function DashboardAdmin() {
@@ -147,7 +147,7 @@ function DashboardAdmin() {
       </div> : <div className="role-empty-state"><strong>Nenhum usuário encontrado</strong><p>Ajuste a busca e tente novamente.</p></div>}
       {selectedUser && <div className="admin-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedUser(null) }}>
         <section className="admin-user-modal" role="dialog" aria-modal="true" aria-labelledby="admin-user-modal-title">
-          <button type="button" className="admin-modal-close" onClick={() => setSelectedUser(null)} aria-label="Fechar">×</button>
+          <button type="button" className="admin-modal-close" onClick={() => setSelectedUser(null)} aria-label="Voltar"><ArrowLeft size={17} /><span>Voltar</span></button>
           <span className="role-kicker">PERFIL DA PLATAFORMA</span>
           <h3 id="admin-user-modal-title">{selectedUser.name || 'Nome não informado'}</h3>
           <dl><div><dt>E-mail</dt><dd>{selectedUser.email}</dd></div><div><dt>Perfil</dt><dd>{selectedUser.role}</dd></div>{selectedUser.role === 'TEACHER' && <div><dt>Aprovação</dt><dd>{selectedUser.status_approval || 'PENDING'}</dd></div>}</dl>

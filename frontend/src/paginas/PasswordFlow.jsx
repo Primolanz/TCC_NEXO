@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import CabecalhoPagina from '../componentes/CabecalhoPagina.jsx'
 import { clearSession } from '../servicos/apiClient.js'
 import '../paginasCSS/PasswordFlow.css'
@@ -32,7 +32,7 @@ export function ForgotPassword() {
       })
       const body = await response.json()
       if (!response.ok) throw new Error(body.error || 'Não foi possível solicitar a redefinição.')
-      setMessage(body.message)
+      setMessage('E-mail de recuperação enviado! Verifique sua caixa de entrada e a pasta de SPAM. Caso não receba, aguarde 1 hora para tentar novamente devido aos limites de segurança.')
     } catch (requestError) {
       setError(requestError.message)
     } finally {
@@ -64,11 +64,18 @@ export function ForgotPassword() {
 }
 
 export function UpdatePassword({ recovery = false }) {
+  const navigate = useNavigate()
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [error, setError] = useState('')
   const [complete, setComplete] = useState(false)
   const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (!complete) return undefined
+    const timer = window.setTimeout(() => navigate('/login', { replace: true }), 2500)
+    return () => window.clearTimeout(timer)
+  }, [complete, navigate])
 
   async function submit(event) {
     event.preventDefault()
@@ -111,7 +118,7 @@ export function UpdatePassword({ recovery = false }) {
       {complete ? <Link className="botao-entrar botao-entrar-link" to="/login">Ir para o login</Link> : <form className="formulario-login" onSubmit={submit}>
         <div className="grupo-campo"><label className="rotulo-campo" htmlFor="new-password">NOVA SENHA</label><input className="campo-login" id="new-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="new-password" minLength="8" required /></div>
         <div className="grupo-campo"><label className="rotulo-campo" htmlFor="confirm-password">CONFIRMAR NOVA SENHA</label><input className="campo-login" id="confirm-password" type="password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="new-password" minLength="8" required /></div>
-        <button className="botao-entrar" type="submit" disabled={busy}>{busy ? 'Salvando…' : 'Salvar nova senha'}</button>
+        <button className="botao-entrar" type="submit" disabled={busy}>{busy ? 'Salvando…' : recovery ? 'Redefinir Senha' : 'Salvar nova senha'}</button>
       </form>}
     </section></div>
   </main>
