@@ -1,104 +1,111 @@
-  const supabase = require('../config/supabase');
+const supabase = require('../config/supabase');
 
-  // 1. Buscar todas as questões (Sem revelar a resposta correta ao aluno)
-  exports.getQuestions = async (req, res) => {
-    try {
-      const { data: questions, error } = await supabase
-        .from('questions')
-        .select('id, subject, topic, statement, options');
+function normalizeOption(value) {
+  if (Number.isInteger(value)) return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    if (/^[0-4]$/.test(normalized)) return Number(normalized);
+    if (/^[a-e]$/i.test(normalized)) return normalized.toLowerCase().charCodeAt(0) - 97;
+  }
+  return null;
+}
 
-      if (error) throw error;
+exports.getQuestions = async (req, res) => {
+  try {
+    const { data: questions, error } = await supabase
+      .from('questions')
+      .select('id, subject, topic, statement, options')
+      .eq('module', 'INITIAL')
+      .eq('is_initial', true);
+    if (error) throw error;
+    return res.status(200).json(questions);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
 
-      return res.status(200).json(questions);
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
+exports.submitDiagnostic = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { answers } = req.body;
+    if (!Array.isArray(answers) || answers.length !== 20) {
+      return res.status(400).json({ error: 'A prova deve conter exatamente 20 respostas.' });
     }
-  };
 
-  // 2. Submeter o teste, calcular pontuação e salvar diagnósticos
-  exports.submitDiagnostic = async (req, res) => {
-    try {
-      const userId = req.user.id; // Obtido através do middleware de autenticação
-      const { answers } = req.body; // Array de objetos: [{ question_id, selected_option }]
+    const { data: questions, error: questionsError } = await supabase
+      .from('questions')
+      .select('id, subject, topic, statement, correct_option')
+      .eq('module', 'INITIAL')
+      .eq('is_initial', true);
+    if (questionsError) throw questionsError;
 
-      if (!answers || !Array.isArray(answers) || answers.length === 0) {
-        return res.status(400).json({ error: 'Respostas não fornecidas.' });
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('plan')
+      .eq('id', userId)
+      .single();
+    if (userError) throw userError;
+
+    const questionMap = new Map(questions.map((question) => [String(question.id), question]));
+    let score = 0;
+    const weakTopicsMap = {};
+    const answersToInsert = [];
+    const results = [];
+
+    for (const answer of answers) {
+      const question = questionMap.get(String(answer.question_id));
+      if (!question) return res.status(400).json({ error: `Questão inválida: ${answer.question_id}` });
+
+      const selectedOption = normalizeOption(answer.selected_option);
+      const correctOption = normalizeOption(question.correct_option);
+      if (selectedOption === null || correctOption === null) {
+        return res.status(400).json({ error: 'Invalid option. Use an index from 0 to 4 or a letter from A to E.' });
       }
+      const isCorrect = correctOption === selectedOption;
+      if (isCorrect) score += 1;
+      else weakTopicsMap[question.topic] = (weakTopicsMap[question.topic] || 0) + 1;
 
-      // Buscar todas as questões para conferência do gabarito
-      const { data: questions, error: qError } = await supabase
-        .from('questions')
-        .select('id, topic, correct_option');
-
-      if (qError) throw qError;
-
-      let score = 0;
-      const weakTopicsMap = {};
-      const answersToInsert = [];
-
-      // Mapear respostas para facilitar a busca
-      const questionMap = new Map(questions.map(q => [q.id, q]));
-
-      for (const ans of answers) {
-        const q = questionMap.get(ans.question_id);
-        if (!q) continue;
-
-        const isCorrect = q.correct_option === ans.selected_option;
-
-        if (isCorrect) {
-          score += 1;
-        } else {
-          // Registra contagem de erros por tópico
-          weakTopicsMap[q.topic] = (weakTopicsMap[q.topic] || 0) + 1;
-        }
-
-        answersToInsert.push({
-          question_id: ans.question_id,
-          selected_option: ans.selected_option,
-          is_correct: isCorrect
-        });
-      }
-
-      // Formatar tópicos fracos para salvamento
-      const weakTopics = Object.keys(weakTopicsMap).map(topic => ({
-        topic,
-        errorsCount: weakTopicsMap[topic]
-      }));
-
-      // Inserir registro na tabela 'diagnostics'
-      const { data: diagnostic, error: dError } = await supabase
-        .from('diagnostics')
-        .insert({
-          user_id: userId,
-          score,
-          weak_topics: weakTopics
-        })
-        .select()
-        .single();
-
-      if (dError) throw dError;
-
-      // Inserir detalhamento das respostas associadas ao id do diagnóstico
-      const finalAnswers = answersToInsert.map(a => ({
-        ...a,
-        diagnostic_id: diagnostic.id
-      }));
-
-      const { error: aError } = await supabase
-        .from('diagnostic_answers')
-        .insert(finalAnswers);
-
-      if (aError) throw aError;
-
-      return res.status(201).json({
-        message: 'Diagnóstico concluído com sucesso!',
-        diagnosticId: diagnostic.id,
-        score,
-        totalQuestions: questions.length,
-        weakTopics
+      answersToInsert.push({
+        question_id: question.id,
+        selected_option: selectedOption,
+        is_correct: isCorrect,
       });
-
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
+      results.push({
+        question_id: question.id,
+        subject: question.subject,
+        topic: question.topic,
+        statement: question.statement,
+        selected_option: selectedOption,
+        correct_option: correctOption,
+        is_correct: isCorrect,
+      });
     }
-  };
+
+    const weakTopics = Object.entries(weakTopicsMap).map(([topic, errorsCount]) => ({ topic, errorsCount }));
+    const { data: diagnostic, error: diagnosticError } = await supabase
+      .from('diagnostics')
+      .insert({ user_id: userId, score, weak_topics: weakTopics, module: 'INITIAL' })
+      .select()
+      .single();
+    if (diagnosticError) throw diagnosticError;
+
+    const detailedAnswers = answersToInsert.map((answer) => ({ ...answer, diagnostic_id: diagnostic.id }));
+    const { error: answersError } = await supabase.from('diagnostic_answers').insert(detailedAnswers);
+    if (answersError) throw answersError;
+
+    const canGenerateAIPlan = ['pro', 'premium'].includes(String(user.plan || '').toLowerCase());
+    return res.status(200).json({
+      message: 'Diagnóstico concluído com sucesso!',
+      diagnosticId: diagnostic.id,
+      score,
+      totalQuestions: answersToInsert.length,
+      correctAnswers: score,
+      incorrectAnswers: answersToInsert.length - score,
+      weakTopics,
+      results,
+      canGenerateAIPlan,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};

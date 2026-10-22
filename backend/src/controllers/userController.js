@@ -1,7 +1,9 @@
 const supabase = require('../config/supabase');
+const { friendlyAuthError, isEmailRateLimitError } = require('../utils/authErrors');
 
 exports.registerUser = async (req, res) => {
-  const { name, email, password, role = 'STUDENT', plan = 'FREE' } = req.body;
+  const { name, email, password, role = 'STUDENT' } = req.body;
+  const normalizedRole = String(role).toUpperCase();
 
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios.' });
@@ -14,27 +16,48 @@ exports.registerUser = async (req, res) => {
       password,
     });
 
-    if (authError) return res.status(400).json({ error: authError.message });
+    if (authError) {
+      const authErrorText = `${authError.code || ''} ${authError.message || ''}`;
+      const emailAlreadyExists = /already[_ ]?(?:registered|exists)|user[_ ]already[_ ]exists|email[_ ]exists|email.*taken/i.test(authErrorText);
+      return res.status(emailAlreadyExists ? 409 : 400).json({
+        error: emailAlreadyExists ? 'E-mail já cadastrado. Tente entrar ou use outro e-mail.' : authError.message,
+      });
+    }
+
+    const authUser = authData?.user;
+    if (!authUser?.id || (Array.isArray(authUser.identities) && authUser.identities.length === 0)) {
+      return res.status(409).json({ error: 'E-mail já cadastrado. Tente entrar ou use outro e-mail.' });
+    }
 
     // Insere perfil na tabela pública 'users'
     const { data: userData, error: userError } = await supabase
       .from('users')
       .insert([
         {
-          id: authData.user.id,
+          id: authUser.id,
           name,
           email,
-          role,
-          plan
+          role: normalizedRole,
+          ...(normalizedRole === 'TEACHER' ? { status_approval: 'PENDING' } : {}),
+          plan: 'FREE',
         }
       ])
       .select();
 
-    if (userError) return res.status(400).json({ error: userError.message });
+    if (userError) {
+      console.error('[Cadastro] Falha ao criar perfil vinculado ao usuário Auth:', userError.message);
+      return res.status(500).json({ error: 'A conta foi criada, mas não foi possível salvar o perfil. Entre em contato com o suporte.' });
+    }
 
     return res.status(201).json({
-      message: 'Usuário cadastrado com sucesso!',
-      user: userData[0]
+      message: normalizedRole === 'TEACHER'
+        ? 'Conta criada com sucesso. Seu cadastro de professor está pendente de aprovação pelo administrador.'
+        : 'Usuário cadastrado com sucesso!',
+      user: userData[0],
+      session: normalizedRole !== 'TEACHER' && authData.session ? {
+        access_token: authData.session.access_token,
+        refresh_token: authData.session.refresh_token,
+      } : null
     });
   } catch (error) {
     return res.status(500).json({ error: 'Erro interno ao cadastrar usuário.' });
@@ -43,6 +66,21 @@ exports.registerUser = async (req, res) => {
 
 
 
+
+exports.refreshSession = async (req, res) => {
+  const { refresh_token: refreshToken } = req.body;
+  if (!refreshToken) return res.status(400).json({ error: 'Refresh token não fornecido.' });
+  try {
+    const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
+    if (error || !data.session) return res.status(401).json({ error: 'Sessão expirada. Faça login novamente.' });
+    return res.status(200).json({ session: {
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+    } });
+  } catch {
+    return res.status(500).json({ error: 'Não foi possível renovar a sessão.' });
+  }
+};
 
 exports.loginUser = async (req, res) => {
   const { email, password } = req.body;
@@ -59,6 +97,7 @@ exports.loginUser = async (req, res) => {
     });
 
     if (authError) {
+      if (isEmailRateLimitError(authError)) return res.status(429).json({ error: friendlyAuthError(authError) });
       return res.status(401).json({ error: 'Credenciais inválidas.' });
     }
 
@@ -73,15 +112,139 @@ exports.loginUser = async (req, res) => {
       return res.status(400).json({ error: 'Erro ao buscar perfil do usuário.' });
     }
 
+    if (userData.role === 'TEACHER' && userData.status_approval !== 'APPROVED') {
+      const rejected = userData.status_approval === 'REJECTED';
+      return res.status(403).json({
+        error: rejected
+          ? 'O acesso à sua conta de professor foi recusado pelo administrador.'
+          : 'Sua conta de professor ainda está em análise pelo administrador.',
+        code: rejected ? 'TEACHER_REJECTED' : 'TEACHER_PENDING',
+      });
+    }
+
+    const [{ data: diagnostic, error: diagnosticError }, { data: studyPlan, error: planError }] = await Promise.all([
+      supabase.from('diagnostics').select('id').eq('user_id', authData.user.id).eq('module', 'INITIAL').limit(1).maybeSingle(),
+      supabase.from('study_plans').select('id').eq('user_id', authData.user.id).limit(1).maybeSingle(),
+    ]);
+    if (diagnosticError) throw diagnosticError;
+    if (planError) throw planError;
+
+    const hasProfile = Boolean(userData.age_group && userData.occupation && userData.main_goal);
+    const hasDiagnostic = Boolean(diagnostic);
+    const hasStudyPlan = Boolean(studyPlan);
+
     return res.status(200).json({
       message: 'Login realizado com sucesso!',
       session: {
         access_token: authData.session.access_token,
         refresh_token: authData.session.refresh_token,
       },
-      user: userData,
+      user: {
+        ...userData,
+        hasDiagnostic,
+        hasInitialDiagnostic: hasDiagnostic,
+        hasStudyPlan,
+        hasProfile,
+        onboardingCompleted: hasProfile && hasDiagnostic,
+      },
     });
   } catch (error) {
-    return res.status(500).json({ error: 'Erro interno ao realizar login.' });
+    return res.status(isEmailRateLimitError(error) ? 429 : 500).json({ error: friendlyAuthError(error, 'Erro interno ao realizar login.') });
   }
 };
+
+exports.getMyProfile = async (req, res) => {
+  try {
+    const [{ data: user, error: userError }, { data: diagnostic, error: diagnosticError }] = await Promise.all([
+      supabase.from('users').select('*').eq('id', req.user.id).maybeSingle(),
+      supabase.from('diagnostics').select('id').eq('user_id', req.user.id).eq('module', 'INITIAL').limit(1).maybeSingle(),
+    ]);
+    if (userError) throw userError;
+    if (diagnosticError) throw diagnosticError;
+    if (!user) return res.status(404).json({ error: 'Perfil de usuário não encontrado.' });
+    const hasProfile = Boolean(user.age_group && user.occupation && user.main_goal);
+    const hasInitialDiagnostic = Boolean(diagnostic);
+    return res.json({ user: {
+      ...user,
+      hasProfile,
+      hasDiagnostic: hasInitialDiagnostic,
+      hasInitialDiagnostic,
+      onboardingCompleted: hasProfile && hasInitialDiagnostic,
+    } });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Erro ao buscar perfil.' });
+  }
+};
+
+// Atualizar perfil do Onboarding (Idade, Ocupação e Objetivos)
+exports.updateOnboarding = async (req, res) => {
+  try {
+    const userId = req.user.id; // Obtido do authMiddleware
+    const { age_group, occupation, main_goal } = req.body;
+
+    if (!age_group || !occupation || !main_goal) {
+      return res.status(400).json({ error: 'Preencha todos os campos do onboarding.' });
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        age_group,
+        occupation,
+        main_goal,
+        updated_at: new Date()
+      })
+      .eq('id', userId)
+      .select('id, name, email, role, plan, age_group, occupation, main_goal')
+      .single();
+
+    if (error) throw error;
+
+    return res.status(200).json({
+      message: 'Dados do onboarding salvos com sucesso!',
+      user: data
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.subscribePremium = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { data: profile, error: profileError } = await supabase
+      .from('users').select('id, role').eq('id', userId).maybeSingle();
+    if (profileError) throw profileError;
+    if (!profile) return res.status(404).json({ error: 'Perfil de usuário não encontrado.' });
+    if (profile.role !== 'STUDENT') return res.status(403).json({ error: 'Apenas alunos podem assinar o plano Premium.' });
+
+    const { data: user, error: updateError } = await supabase
+      .from('users')
+      .update({ plan: 'PREMIUM', updated_at: new Date() })
+      .eq('id', userId)
+      .select('id, name, email, role, plan')
+      .single();
+
+    if (updateError) throw updateError;
+
+    const { data: diagnostic, error: diagnosticError } = await supabase
+      .from('diagnostics')
+      .select('id')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (diagnosticError) throw diagnosticError;
+
+    return res.status(200).json({
+      message: 'Plano atualizado para PREMIUM com sucesso.',
+      user,
+      hasDiagnostic: Boolean(diagnostic),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+exports.upgradeToPremium = exports.subscribePremium;
