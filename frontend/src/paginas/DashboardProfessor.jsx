@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BookOpen, ClipboardList, UsersRound } from 'lucide-react'
+import { BookOpen, ClipboardList, FilePlus, LayoutDashboard, UsersRound, X } from 'lucide-react'
 import RoleDashboard from '../componentes/RoleDashboard.jsx'
 import { apiClient } from '../servicos/apiClient.js'
 
 const navigation = [
-  { id: 'inicio', title: 'Início' },
-  { id: 'turmas', title: 'Minhas Turmas' },
-  { id: 'atividade', title: 'Lançar Atividade' },
-  { id: 'relatorios', title: 'Relatórios' },
+  { id: 'inicio', title: 'Início', icon: <LayoutDashboard /> },
+  { id: 'turmas', title: 'Minhas Turmas', icon: <UsersRound /> },
+  { id: 'atividade', title: 'Lançar Atividade', icon: <FilePlus /> },
+  { id: 'relatorios', title: 'Relatórios', icon: <BookOpen /> },
 ]
 
 const meses = [
@@ -78,6 +78,10 @@ function DashboardProfessor() {
   const [studentError, setStudentError] = useState('')
   const [classStudents, setClassStudents] = useState({})
   const [studentsLoading, setStudentsLoading] = useState(false)
+  const [reports, setReports] = useState({ evaluatedStudentCount: 0, averagePerformance: null, classes: [] })
+  const [reportsLoading, setReportsLoading] = useState(false)
+  const [reportsError, setReportsError] = useState('')
+  const [selectedReportClass, setSelectedReportClass] = useState(null)
   const dataHojeISO = dataAtualFormatadaISO.slice(0, 10)
   const anoAtual = Number(dataHojeISO.slice(0, 4))
   const diasNoMes = dataEntrega.mes && dataEntrega.ano
@@ -110,6 +114,22 @@ function DashboardProfessor() {
   }, [])
 
   useEffect(() => { carregarTurmas().catch(() => {}) }, [carregarTurmas])
+
+  async function carregarRelatorios() {
+    setReportsLoading(true)
+    setReportsError('')
+    try {
+      const response = await apiClient('/teacher/reports')
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.error || 'Não foi possível carregar os relatórios.')
+      setReports(body)
+      setSelectedReportClass((current) => current ? { ...current, report: (body.classes || []).find((item) => item.id === current.id) } : null)
+    } catch (error) {
+      setReportsError(error.message)
+    } finally {
+      setReportsLoading(false)
+    }
+  }
 
   async function criarTurma(event) {
     event.preventDefault()
@@ -222,6 +242,7 @@ function DashboardProfessor() {
   }
 
   function renderContent({ user, activeTab, goToTab }) {
+    const selectedClassReport = selectedReportClass ? reports.classes.find((report) => report.id === selectedReportClass.id) : null
     if (activeTab === 'inicio') {
       const metrics = [
         { title: 'Turmas criadas', value: classes.length, badge: 'Minhas turmas', icon: '▦' },
@@ -244,7 +265,7 @@ function DashboardProfessor() {
             <button className="role-action-card" type="button" onClick={() => goToTab('atividade')}><span className="role-card-icon role-icon-teal" aria-hidden="true">✎</span><span><strong>Lançar atividade</strong><small>Prepare uma tarefa para sua turma.</small></span><b aria-hidden="true">→</b></button>
           </div>
         </section>
-        <p className="role-home-note">Olá, Professor {user.name || ''}. Seu painel reúne os principais números e atalhos para o dia a dia.</p>
+        <p className="role-home-note">Olá, Professor(a) {user.name || ''}. Seu painel reúne os principais números e atalhos para o dia a dia.</p>
       </>
     }
 
@@ -262,11 +283,11 @@ function DashboardProfessor() {
       </form>
       <div className="role-list-heading"><h3>Turmas cadastradas</h3><span>{classes.length} no total</span></div>
       {loadingClasses && classes.length === 0 ? <div className="role-empty-state"><strong>Carregando turmas…</strong></div> : classes.length ? <div className="role-list">
-        {classes.map((item) => <article className="role-list-item class-list-item" key={item.id}>
+        {classes.map((item) => <article className="role-list-item class-list-item class-list-item-clicavel" key={item.id} tabIndex={0} aria-label={`Abrir alunos da turma ${item.name}`} onClick={() => carregarAlunos(item.id)} onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); carregarAlunos(item.id) } }}>
           <span className="role-card-icon" aria-hidden="true">▦</span>
           <div className="class-list-details"><strong>{item.name}</strong><small>{item.student_count || 0} {(item.student_count || 0) === 1 ? 'aluno' : 'alunos'}</small><span className="class-code"><span>Código de acesso</span><code>{item.code}</code></span></div>
-          <div className="class-actions"><button className="class-copy-button" type="button" onClick={() => copiarCodigo(item.code)}>{copiedCode === item.code ? 'Copiado!' : 'Copiar código'}</button><button className="role-secondary-button" type="button" onClick={() => carregarAlunos(item.id)}>Ver alunos</button></div>
-          {classStudents[item.id] && <div className="class-student-list"><h4>Alunos matriculados</h4>{classStudents[item.id].error ? <p role="alert">{classStudents[item.id].error}</p> : classStudents[item.id].length ? classStudents[item.id].map((student) => <button type="button" className="student-row" key={student.id} onClick={() => abrirDesempenho(student, item)}><span><strong>{student.name}</strong><small>{student.email}</small></span><span className="role-badge">{student.completed_count}/{student.assignment_count} concluídas</span></button>) : <p>{studentsLoading ? 'Carregando alunos…' : 'Nenhum aluno matriculado nesta turma.'}</p>}</div>}
+          <div className="class-actions"><button className="class-copy-button" type="button" onClick={(event) => { event.stopPropagation(); copiarCodigo(item.code) }}>{copiedCode === item.code ? 'Copiado!' : 'Copiar código'}</button><button className="role-secondary-button" type="button" onClick={(event) => { event.stopPropagation(); carregarAlunos(item.id) }}>Ver alunos</button></div>
+          {classStudents[item.id] && <div className="class-student-list"><h4>Alunos matriculados</h4>{classStudents[item.id].error ? <p role="alert">{classStudents[item.id].error}</p> : classStudents[item.id].length ? classStudents[item.id].map((student) => <button type="button" className="student-row" key={student.id} onClick={(event) => { event.stopPropagation(); abrirDesempenho(student, item) }}><span><strong>{student.name}</strong><small>{student.email}</small></span><span className="role-badge">{student.completed_count}/{student.assignment_count} concluídas</span></button>) : <p>{studentsLoading ? 'Carregando alunos…' : 'Nenhum aluno matriculado nesta turma.'}</p>}</div>}
         </article>)}
       </div> : <div className="role-empty-state"><span className="role-empty-icon">▦</span><strong>Nenhuma turma criada</strong><p>Use o formulário acima para cadastrar sua primeira turma.</p>{classError && <button className="role-secondary-button" type="button" onClick={() => carregarTurmas().catch(() => {})}>Tentar novamente</button>}</div>}
     </section>
@@ -307,12 +328,20 @@ function DashboardProfessor() {
 
     return <section className="role-tab-panel" aria-labelledby="relatorios-titulo">
       <header className="role-panel-heading"><div><span className="role-kicker">ACOMPANHAMENTO</span><h2 id="relatorios-titulo">Relatórios de desempenho</h2><p>Visão geral do progresso dos alunos por turma.</p></div><span className="role-badge">Resumo</span></header>
-      <div className="role-report-metrics"><article><span>Turmas acompanhadas</span><strong>{classes.length}</strong></article><article><span>Alunos avaliados</span><strong>—</strong></article><article><span>Desempenho médio</span><strong>—</strong></article></div>
-      {classes.length ? <div className="role-list">{classes.map((item) => <article className="role-list-item" key={item.id}><span className="role-card-icon" aria-hidden="true">↗</span><div><strong>{item.name}</strong><small>{item.student_count || 0} alunos · Os resultados serão exibidos quando houver avaliações.</small></div><span className="role-badge">Sem dados</span></article>)}</div> : <div className="role-empty-state"><span className="role-empty-icon">↗</span><strong>Relatórios aparecerão aqui</strong><p>Crie uma turma e registre atividades para acompanhar o desempenho dos alunos.</p><button className="role-secondary-button" type="button" onClick={() => goToTab('turmas')}>Criar uma turma</button></div>}
+      {reportsError && <p className="role-notice" role="alert">{reportsError}</p>}
+      {selectedReportClass && <div className="student-modal-backdrop report-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedReportClass(null) }}><section className="student-performance-panel report-detail-panel" role="dialog" aria-modal="true" aria-labelledby="report-detail-title"><header className="report-detail-header"><div><span className="role-kicker">RELATORIO DA TURMA</span><h2 id="report-detail-title">{selectedReportClass.name}</h2></div><button className="student-modal-close" type="button" aria-label="Fechar relatorio" onClick={() => setSelectedReportClass(null)}><X size={20} /></button></header><section className="report-detail-section"><h3>Alunos matriculados</h3>{reportsLoading && !selectedClassReport ? <p className="report-detail-empty">Carregando dados da turma...</p> : selectedClassReport?.students?.length ? <div className="report-detail-list">{selectedClassReport.students.map((student) => <article className="report-detail-row" key={student.id}><span><strong>{student.name}</strong><small>{student.email}</small></span><span className="role-badge">{student.submittedCount} de {student.assignmentCount} entregas</span></article>)}</div> : <p className="report-detail-empty">Nenhum aluno matriculado nesta turma.</p>}</section><section className="report-detail-section"><h3>Atividades postadas</h3>{reportsLoading && !selectedClassReport ? <p className="report-detail-empty">Carregando atividades...</p> : selectedClassReport?.assignments?.length ? <div className="report-detail-list">{selectedClassReport.assignments.map((assignment) => <article className="report-detail-row" key={assignment.id}><span><strong>{assignment.title}</strong><small>{assignment.dueDate ? `Prazo: ${formatDatePtBr(assignment.dueDate)}` : 'Sem prazo de entrega'}</small></span><span className="role-badge">{assignment.submittedCount} de {assignment.studentCount} entregas</span></article>)}</div> : <p className="report-detail-empty">Nenhuma atividade publicada nesta turma.</p>}</section></section></div>}
+      <div className="role-report-metrics"><article><span>Turmas acompanhadas</span><strong>{classes.length}</strong></article><article><span>Alunos avaliados</span><strong>{reportsLoading ? '…' : reports.evaluatedStudentCount}</strong></article><article><span>Desempenho médio · entregas</span><strong>{reportsLoading ? '…' : reports.averagePerformance === null ? 'Sem notas' : `${reports.averagePerformance}%`}</strong></article></div>
+      {classes.length ? <div className="role-list">{classes.map((item) => {
+        const classReport = reports.classes.find((report) => report.id === item.id)
+        const assignmentCount = classReport?.assignmentCount || 0
+        const submittedCount = classReport?.submittedCount || 0
+        const status = !assignmentCount ? 'Sem atividades' : !submittedCount ? 'Aguardando entregas' : `${submittedCount} ${submittedCount === 1 ? 'entrega' : 'entregas'}`
+        return <article className="role-list-item report-class-card" key={item.id} tabIndex={0} role="button" aria-label={`Ver relatório detalhado da turma ${item.name}`} onClick={() => setSelectedReportClass({ ...item, report: classReport })} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setSelectedReportClass({ ...item, report: classReport }) } }}><span className="role-card-icon" aria-hidden="true">↗</span><div><strong>{item.name}</strong><small>{item.student_count || 0} alunos · {assignmentCount} atividades · {submittedCount} entregas</small></div><span className="role-badge">{reportsLoading ? 'Atualizando' : status}</span></article>
+      })}</div> : <div className="role-empty-state"><span className="role-empty-icon">↗</span><strong>Relatórios aparecerão aqui</strong><p>Crie uma turma e registre atividades para acompanhar o desempenho dos alunos.</p><button className="role-secondary-button" type="button" onClick={() => goToTab('turmas')}>Criar uma turma</button></div>}
     </section>
   }
 
-  return <><RoleDashboard role="TEACHER" title="Área do Professor" eyebrow="SEU ESPAÇO DE ENSINO" subtitle="Acompanhe suas turmas e organize sua rotina docente." navigation={navigation} renderContent={renderContent} />{selectedStudent && <div className="student-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedStudent(null) }}><section className="student-performance-panel" role="dialog" aria-modal="true" aria-labelledby="student-performance-title"><button className="student-modal-close" type="button" aria-label="Fechar" onClick={() => setSelectedStudent(null)}>×</button><span className="role-kicker">DESEMPENHO DO ALUNO · {selectedStudent.classItem.name}</span><h2 id="student-performance-title">{selectedStudent.name}</h2><p className="student-email">{selectedStudent.email}</p>{studentLoading ? <p>Carregando histórico…</p> : studentError ? <p role="alert">{studentError}</p> : studentPerformance && <><div className="student-summary"><strong>{studentPerformance.completed_count}/{studentPerformance.assignment_count}</strong><span>Atividades concluídas</span></div><h3>Histórico de atividades</h3><div className="student-assignment-list">{studentPerformance.assignments.length ? studentPerformance.assignments.map((assignment) => { const status = assignment.status === 'SUBMITTED' ? 'completed' : assignment.overdue ? 'overdue' : 'pending'; return <article className="student-assignment" key={assignment.id}><div><strong>{assignment.title}</strong><small>{assignment.due_date ? `Prazo: ${formatarDataAluno(assignment.due_date)}` : 'Sem prazo definido'}</small>{assignment.submitted_at && <small>Entregue em {formatarDataAluno(assignment.submitted_at)}</small>}</div><span className={`student-status ${status}`}>{status === 'completed' ? 'Concluída' : status === 'overdue' ? 'Atrasada' : 'Pendente'}</span></article> }) : <p>Nenhuma atividade lançada para esta turma.</p>}</div></>}</section></div>}</>
+  return <><RoleDashboard role="TEACHER" title="Área do Professor" eyebrow="SEU ESPAÇO DE ENSINO" subtitle="Acompanhe suas turmas e organize sua rotina docente." navigation={navigation} renderContent={renderContent} onTabChange={(tab) => { if (tab === 'relatorios') carregarRelatorios() }} />{selectedStudent && <div className="student-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedStudent(null) }}><section className="student-performance-panel" role="dialog" aria-modal="true" aria-labelledby="student-performance-title"><button className="student-modal-close" type="button" aria-label="Fechar" onClick={() => setSelectedStudent(null)}>×</button><span className="role-kicker">DESEMPENHO DO ALUNO · {selectedStudent.classItem.name}</span><h2 id="student-performance-title">{selectedStudent.name}</h2><p className="student-email">{selectedStudent.email}</p>{studentLoading ? <p>Carregando histórico…</p> : studentError ? <p role="alert">{studentError}</p> : studentPerformance && <><div className="student-summary"><strong>{studentPerformance.completed_count}/{studentPerformance.assignment_count}</strong><span>Atividades concluídas</span></div><h3>Histórico de atividades</h3><div className="student-assignment-list">{studentPerformance.assignments.length ? studentPerformance.assignments.map((assignment) => { const status = assignment.status === 'SUBMITTED' ? 'completed' : assignment.overdue ? 'overdue' : 'pending'; return <article className="student-assignment" key={assignment.id}><div><strong>{assignment.title}</strong><small>{assignment.due_date ? `Prazo: ${formatarDataAluno(assignment.due_date)}` : 'Sem prazo definido'}</small>{assignment.submitted_at && <small>Entregue em {formatarDataAluno(assignment.submitted_at)}</small>}</div><span className={`student-status ${status}`}>{status === 'completed' ? 'Concluída' : status === 'overdue' ? 'Atrasada' : 'Pendente'}</span></article> }) : <p>Nenhuma atividade lançada para esta turma.</p>}</div></>}</section></div>}</>
 }
 
 export default DashboardProfessor

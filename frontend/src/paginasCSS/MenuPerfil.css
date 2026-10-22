@@ -42,6 +42,6 @@
 @keyframes perfilModalIn { from { opacity: 0; transform: translateY(7px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @media (max-width: 520px) {
   .perfil-backdrop { padding: 10px; }
-  .perfil-modal { max-height: calc(100vh - 20px); padding: 20px 16px; }
+  .perfil-modal { width: 95vw; max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px); padding: 20px 16px; border-radius: 16px; }
   .perfil-dados, .perfil-senha-grid { grid-template-columns: 1fr; }
 }

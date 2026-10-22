@@ -89,6 +89,7 @@ function App() {
       <Route path="/login/professor" element={<LoginProfessor />} />
       <Route path="/login/administrador" element={<LoginAdministrador />} />
       <Route path="/recuperar-senha" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<UpdatePassword recovery />} />
       <Route path="/redefinir-senha" element={<UpdatePassword recovery />} />
       <Route path="/alterar-senha" element={<RotaAutenticada><UpdatePassword /></RotaAutenticada>} />
 

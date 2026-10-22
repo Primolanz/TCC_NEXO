@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import imagemLogoNexo from '../assets/NEXO_LOGO-sem-fundo.png'
-import gifLogoNexo from '../assets/NEXO_GIF.gif'
 import { apiClient } from '../servicos/apiClient.js'
 import '../paginasCSS/PaginaInicial.css'
 
@@ -45,9 +44,6 @@ function PaginaInicial() {
           <Link className="botao-criar-conta" to="/cadastro/aluno">
             <span>Criar sua conta</span><span aria-hidden="true">→</span>
           </Link>
-        </div>
-        <div className="simbolo-decorativo-nexo" aria-hidden="true">
-          <img className="imagem-logo-decorativa" src={gifLogoNexo} alt="" />
         </div>
       </section>
     </main>

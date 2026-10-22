@@ -136,3 +136,9 @@
   .cartao-login { padding: 20px 18px; }
   .opcao-perfil { font-size: 10px; }
 }
+
+@media (max-width: 560px) {
+  .conteudo-central-login { min-height: calc(100dvh - 72px); padding: 16px 12px; }
+  .cartao-login { width: 100%; max-width: 460px; padding: clamp(18px, 5vw, 26px); }
+  .formulario-login input, .formulario-login select, .formulario-login textarea { max-width: 100%; }
+}

@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { ArrowLeft, Bot, BookOpen, ChartNoAxesCombined, ClipboardList, GraduationCap, LayoutDashboard, Menu, UsersRound, X } from 'lucide-react'
 import { apiClient } from '../servicos/apiClient.js'
 import '../paginasCSS/DashboardAluno.css'
 import CheckoutPremiumModal from '../componentes/CheckoutPremiumModal.jsx'
 import MenuPerfil from '../componentes/MenuPerfil.jsx'
 import MarcaNexo from '../componentes/MarcaNexo.jsx'
+import TutorNexo from '../componentes/TutorNexo.jsx'
 
 const ABAS = [
-  { id: 'inicio', label: 'Início' },
-  { id: 'turmas', label: 'Minhas turmas' },
-  { id: 'atividades', label: 'Atividades' },
-  { id: 'resultados', label: 'Meus resultados' },
-  { id: 'planos', label: 'Planos de estudo' },
-  { id: 'evolucao', label: 'Evolução' },
+  { id: 'inicio', label: 'Início', icon: <LayoutDashboard /> },
+  { id: 'turmas', label: 'Minhas turmas', icon: <UsersRound /> },
+  { id: 'atividades', label: 'Atividades', icon: <ClipboardList /> },
+  { id: 'resultados', label: 'Meus resultados', icon: <ChartNoAxesCombined /> },
+  { id: 'planos', label: 'Planos de estudo', icon: <BookOpen /> },
+  { id: 'evolucao', label: 'Evolução', icon: <GraduationCap /> },
+  { id: 'tutor', label: 'NEXO', icon: <Bot /> },
 ]
 
 function parseJsonValue(value) {
@@ -192,6 +195,7 @@ function DashboardAluno() {
   const [planoDiaSelecionado, setPlanoDiaSelecionado] = useState(null)
   const location = useLocation()
   const [abaAtiva, setAbaAtiva] = useState(() => location.state?.openTab || 'inicio')
+  const [menuMobileAberto, setMenuMobileAberto] = useState(false)
   const [checkoutPremiumOpen, setCheckoutPremiumOpen] = useState(false)
   const navegar = useNavigate()
   const areaPrincipalRef = useRef(null)
@@ -310,6 +314,11 @@ function DashboardAluno() {
 
   function abrirAba(aba) {
     setAbaAtiva(aba)
+    setMenuMobileAberto(false)
+    if (aba === 'tutor') {
+      setCarregandoAtividades(true)
+      carregarAtividades().catch((error) => setErroAtividades(error.message)).finally(() => setCarregandoAtividades(false))
+    }
   }
 
   async function gerarPlanoEstudos() {
@@ -436,10 +445,32 @@ function DashboardAluno() {
   const retomadas = historico.filter((item) => item.assessment_type === 'RETAKE')
   const avaliacaoRetomada = retomadas[retomadas.length - 1]
   const topicosRetomada = avaliacaoRetomada?.topics || []
+  const progressoItens = dados.study_plan_progress || []
+  const cronogramaTutor = planoEstudos.schedule || []
+  const atividadesPendentes = atividades.filter((item) => item.status !== 'SUBMITTED')
+  const agora = Date.now()
+  const tarefasProximas = atividadesPendentes.filter((item) => item.due_date && new Date(item.due_date).getTime() >= agora && new Date(item.due_date).getTime() <= agora + 7 * 24 * 60 * 60 * 1000)
+  const diagnosticosTutor = (dados.history || []).filter((item) => ['INITIAL', 'RETAKE'].includes(item.assessment_type)).map((item) => ({
+    type: item.assessment_type,
+    score: item.overall_average,
+    difficulties: Object.values(item.subjects || {}).flatMap((subject) => subject.weaknesses || []),
+  }))
+  const contextoTutor = {
+    name: dados.user?.name,
+    pendingActivities: atividadesPendentes.map((item) => ({ title: item.title, dueDate: item.due_date, className: item.class_name })),
+    upcomingCount: tarefasProximas.length,
+    studyPlan: cronogramaTutor.length ? {
+      completed: progressoItens.filter((item) => item.completed_at).length,
+      total: cronogramaTutor.length,
+      topics: cronogramaTutor.map((item) => item.topic),
+    } : null,
+    diagnostics: diagnosticosTutor,
+  }
 
   return (
     <main className="dashboard-aluno animate-fade-in">
-      <aside className="dashboard-sidebar">
+      {menuMobileAberto && <button className="dashboard-mobile-overlay" type="button" aria-label="Fechar menu" onClick={() => setMenuMobileAberto(false)} />}
+      <aside className={`dashboard-sidebar ${menuMobileAberto ? 'mobile-drawer-open' : ''}`}>
         <Link className="dashboard-logo" to="/inicio" aria-label="NEXO início"><MarcaNexo variant="sidebar" /></Link>
         <nav aria-label="Navegação do aluno">
           {ABAS.map((aba) => (
@@ -450,7 +481,7 @@ function DashboardAluno() {
               aria-current={abaAtiva === aba.id ? 'page' : undefined}
               onClick={() => abrirAba(aba.id)}
             >
-              {aba.label}
+              {aba.icon}<span>{aba.label}</span>
             </button>
           ))}
         </nav>
@@ -463,8 +494,10 @@ function DashboardAluno() {
             <span><small>ESPAÇO NEXO</small><strong>Área do aluno</strong></span>
           </div>
           <MenuPerfil user={dados.user} role="STUDENT" />
+          <button className="dashboard-mobile-menu-button" type="button" aria-label={menuMobileAberto ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuMobileAberto} onClick={() => setMenuMobileAberto((open) => !open)}>{menuMobileAberto ? <X size={21} /> : <Menu size={21} />}</button>
         </header>
         <section className="dashboard-conteudo">
+          {abaAtiva === 'tutor' && <TutorNexo isPremium={!planoFree} context={contextoTutor} onPremium={() => setCheckoutPremiumOpen(true)} />}
           {abaAtiva === 'inicio' && <>
             <div className="dashboard-boas-vindas">
               <p>SEU ESPAÇO DE APRENDIZAGEM</p>
@@ -514,7 +547,7 @@ function DashboardAluno() {
             </div> : <p className="aluno-turmas-vazio">Não há atividades pendentes nas suas turmas.</p>}
             {atividadeSelecionada && <div className="aluno-atividade-modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setAtividadeSelecionada(null) }}>
               <section className="aluno-atividade-modal" role="dialog" aria-modal="true" aria-labelledby="atividade-modal-titulo">
-                <button className="aluno-atividade-modal-fechar" type="button" aria-label="Fechar detalhes" onClick={() => setAtividadeSelecionada(null)}>×</button>
+          <button className="aluno-atividade-modal-fechar" type="button" aria-label="Voltar" onClick={() => setAtividadeSelecionada(null)}><ArrowLeft size={18} /><span>Voltar</span></button>
                 <span className="aluno-turmas-kicker">{atividadeSelecionada.class_name}</span>
                 <h2 id="atividade-modal-titulo">{atividadeSelecionada.title}</h2>
                 <div className="aluno-atividade-modal-prazo"><span>Data e hora limite</span><strong>{formatarDataHoraEntrega(atividadeSelecionada.due_date)}</strong></div>
@@ -689,7 +722,7 @@ function DashboardAluno() {
       {checkoutPremiumOpen && <CheckoutPremiumModal onClose={() => setCheckoutPremiumOpen(false)} onSuccess={(user) => { setDados((current) => ({ ...current, user: { ...current?.user, ...user, plan: 'PREMIUM' } })); setAbaAtiva('inicio'); setCheckoutPremiumOpen(false); navegar('/inicio', { replace: true }) }} />}
       {topicoEvolucaoSelecionado && <div className="aluno-atividade-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setTopicoEvolucaoSelecionado(null) }}>
         <section className="aluno-atividade-modal dashboard-detalhe-modal" role="dialog" aria-modal="true" aria-labelledby="topico-detalhe-titulo">
-          <button className="aluno-atividade-modal-fechar" type="button" onClick={() => setTopicoEvolucaoSelecionado(null)} aria-label="Fechar detalhes">×</button>
+          <button className="aluno-atividade-modal-fechar" type="button" onClick={() => setTopicoEvolucaoSelecionado(null)} aria-label="Voltar"><ArrowLeft size={18} /><span>Voltar</span></button>
           <span className="dashboard-modal-kicker">EVOLUÇÃO POR TÓPICO · {topicoEvolucaoSelecionado.subjectLabel}</span>
           <h2 id="topico-detalhe-titulo">{topicoEvolucaoSelecionado.topic}</h2>
           <div className="dashboard-topico-metricas">
@@ -704,7 +737,7 @@ function DashboardAluno() {
       </div>}
       {planoDiaSelecionado && <div className="aluno-atividade-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPlanoDiaSelecionado(null) }}>
         <section className="aluno-atividade-modal dashboard-detalhe-modal" role="dialog" aria-modal="true" aria-labelledby="plano-dia-titulo">
-          <button className="aluno-atividade-modal-fechar" type="button" onClick={() => setPlanoDiaSelecionado(null)} aria-label="Fechar conteúdo">×</button>
+          <button className="aluno-atividade-modal-fechar" type="button" onClick={() => setPlanoDiaSelecionado(null)} aria-label="Voltar"><ArrowLeft size={18} /><span>Voltar</span></button>
           <span className="dashboard-modal-kicker">{planoDiaSelecionado.item.day || `DIA ${planoDiaSelecionado.index + 1}`}</span>
           <h2 id="plano-dia-titulo">{planoDiaSelecionado.item.topic}</h2>
           {planoDiaSelecionado.item.subject && <span className={`dashboard-materia-badge ${subjectBadgeClass(planoDiaSelecionado.item.subject)}`}>{planoDiaSelecionado.item.subject}</span>}

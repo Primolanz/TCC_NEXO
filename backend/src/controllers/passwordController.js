@@ -1,21 +1,23 @@
 const { createClient } = require('@supabase/supabase-js');
 const supabase = require('../config/supabase');
+const { friendlyAuthError, isEmailRateLimitError } = require('../utils/authErrors');
 
 exports.requestReset = async (req, res) => {
   const email = String(req.body.email || '').trim();
   if (!email) return res.status(400).json({ error: 'Informe seu e-mail.' });
 
   try {
-    const redirectTo = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/redefinir-senha`;
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+    const redirectTo = `${frontendUrl}/reset-password`;
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
     if (error) {
       console.error('[Senha] Supabase resetPasswordForEmail falhou:', error.message);
-      return res.status(400).json({ error: error.message });
+      return res.status(isEmailRateLimitError(error) ? 429 : 400).json({ error: friendlyAuthError(error, 'Não foi possível solicitar a redefinição.') });
     }
     return res.json({ message: 'E-mail com instruções para redefinir sua senha enviado com sucesso. Confira sua caixa de entrada.' });
   } catch (error) {
     console.error('[Senha] Erro ao solicitar redefinição:', error.message);
-    return res.status(500).json({ error: error.message || 'Não foi possível solicitar a redefinição agora.' });
+    return res.status(isEmailRateLimitError(error) ? 429 : 500).json({ error: friendlyAuthError(error, 'Não foi possível solicitar a redefinição agora.') });
   }
 };
 
@@ -34,7 +36,7 @@ exports.updatePassword = async (req, res) => {
       const { data: signedIn, error: signInError } = await client.auth.signInWithPassword({ email: req.user.email, password: currentPassword });
       if (signInError || signedIn.user?.id !== req.user.id) return res.status(401).json({ error: 'A senha atual está incorreta.' });
       const { error: updateError } = await client.auth.updateUser({ password });
-      if (updateError) return res.status(400).json({ error: updateError.message || 'Não foi possível atualizar a senha.' });
+      if (updateError) return res.status(isEmailRateLimitError(updateError) ? 429 : 400).json({ error: friendlyAuthError(updateError, 'Não foi possível atualizar a senha.') });
       return res.json({ message: 'Senha atualizada com sucesso.' });
     }
 
@@ -43,10 +45,10 @@ exports.updatePassword = async (req, res) => {
     if (sessionError) return res.status(401).json({ error: 'A sessão expirou. Solicite um novo link de redefinição.' });
 
     const { error } = await client.auth.updateUser({ password });
-    if (error) return res.status(400).json({ error: error.message || 'Não foi possível atualizar a senha.' });
+    if (error) return res.status(isEmailRateLimitError(error) ? 429 : 400).json({ error: friendlyAuthError(error, 'Não foi possível atualizar a senha.') });
     return res.json({ message: 'Senha atualizada com sucesso.' });
   } catch (error) {
-    return res.status(500).json({ error: 'Não foi possível atualizar a senha agora.' });
+    return res.status(isEmailRateLimitError(error) ? 429 : 500).json({ error: friendlyAuthError(error, 'Não foi possível atualizar a senha agora.') });
   }
 };
 

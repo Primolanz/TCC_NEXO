@@ -1,4 +1,5 @@
 const supabase = require('../config/supabase');
+const { friendlyAuthError, isEmailRateLimitError } = require('../utils/authErrors');
 
 exports.registerUser = async (req, res) => {
   const { name, email, password, role = 'STUDENT' } = req.body;
@@ -96,6 +97,7 @@ exports.loginUser = async (req, res) => {
     });
 
     if (authError) {
+      if (isEmailRateLimitError(authError)) return res.status(429).json({ error: friendlyAuthError(authError) });
       return res.status(401).json({ error: 'Credenciais inválidas.' });
     }
 
@@ -147,7 +149,7 @@ exports.loginUser = async (req, res) => {
       },
     });
   } catch (error) {
-    return res.status(500).json({ error: 'Erro interno ao realizar login.' });
+    return res.status(isEmailRateLimitError(error) ? 429 : 500).json({ error: friendlyAuthError(error, 'Erro interno ao realizar login.') });
   }
 };
 

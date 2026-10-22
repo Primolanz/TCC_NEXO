@@ -1,0 +1,73 @@
+.tutor-pagina { width: min(100%, 1100px); margin: 0 auto; color: #f5edff; }
+.tutor-cabecalho { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
+.tutor-kicker { color: #bd85f4; font-size: 10px; font-weight: 800; letter-spacing: .15em; }
+.tutor-cabecalho h1 { margin: 7px 0; font-size: clamp(26px, 4vw, 35px); }
+.tutor-cabecalho p { margin: 0; color: #aaa0b4; font-size: 12px; }
+.tutor-online { display: inline-flex; align-items: center; gap: 8px; color: #a9ddc2; font-size: 11px; white-space: nowrap; }
+.tutor-online i { width: 8px; height: 8px; border-radius: 50%; background: #59cc91; box-shadow: 0 0 12px #59cc91; }
+.tutor-painel { position: relative; overflow: hidden; border: 1px solid #403148; border-radius: 18px; background: linear-gradient(145deg, #19141f, #100e14); box-shadow: 0 20px 55px #05040740; }
+.tutor-conversa { display: flex; min-height: 360px; max-height: 53vh; flex-direction: column; gap: 17px; overflow-y: auto; padding: clamp(17px, 3vw, 26px); scroll-behavior: smooth; }
+.tutor-mensagem { display: flex; max-width: min(86%, 760px); align-items: flex-end; gap: 10px; }
+.tutor-mensagem-aluno { align-self: flex-end; }
+.tutor-avatar { display: grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; border: 1px solid #735192; border-radius: 12px; color: #c99cff; background: linear-gradient(145deg, #261a35, #15111d); box-shadow: 0 0 18px #7b46b51f; }
+.tutor-balao { min-width: 100px; padding: 12px 15px; border: 1px solid #3a2e43; border-radius: 14px 14px 14px 4px; background: #1d1724; }
+.tutor-mensagem-aluno .tutor-balao { border-color: #594076; border-radius: 14px 14px 4px 14px; background: linear-gradient(135deg, #39234f, #2b1d3a); }
+.tutor-autor { color: #c299e9; font-size: 10px; font-weight: 800; }
+.tutor-mensagem-texto { margin-top: 5px; color: #e3dce9; font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+.tutor-mensagem-texto p { min-height: 1em; margin: 0; white-space: pre-wrap; }
+.tutor-mensagem-texto ul { display: grid; gap: 5px; margin: 2px 0; padding-left: 20px; }
+.tutor-mensagem-texto li { padding-left: 2px; white-space: pre-wrap; }
+.tutor-mensagem-texto li::marker { color: #bd85f4; }
+.tutor-mensagem-texto strong { color: #fff; font-weight: 800; }
+.tutor-mensagem-texto em { color: #e2c8f7; }
+.tutor-mensagem-texto .tutor-linha-vazia { min-height: 5px; }
+.tutor-digitando { display: flex; align-items: center; gap: 10px; color: #b9a9c7; font-size: 11px; }
+.tutor-pontos { display: inline-block; overflow: hidden; width: 0; vertical-align: bottom; animation: tutor-pontos 1.2s steps(4, end) infinite; }
+@keyframes tutor-pontos { to { width: 1.4em; } }
+.tutor-atalhos { padding: 0 clamp(17px, 3vw, 26px) 17px; }
+.tutor-atalhos > span { display: block; margin-bottom: 9px; color: #93889c; font-size: 10px; font-weight: 700; }
+.tutor-atalhos > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.tutor-atalhos button { padding: 8px 11px; border: 1px solid #44364f; border-radius: 999px; color: #d3c3e1; background: #17121d; font-size: 10px; cursor: pointer; }
+.tutor-atalhos button:hover { border-color: #9b69c6; color: white; }
+.tutor-atalhos button:disabled { opacity: .55; cursor: wait; }
+.tutor-erro { margin: 0 22px 12px; color: #ffaaa4; font-size: 12px; }
+.tutor-form { display: flex; align-items: flex-end; gap: 10px; margin: 0 clamp(13px, 2vw, 20px) 18px; padding: 8px; border: 1px solid #44364f; border-radius: 13px; background: #0e0b12; }
+.tutor-form .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
+.tutor-form textarea { min-height: 40px; max-height: 120px; flex: 1; resize: vertical; padding: 11px 10px; border: 0; outline: 0; color: #f5edff; background: transparent; font: inherit; font-size: 12px; }
+.tutor-form textarea::placeholder { color: #756b7e; }
+.tutor-form button, .tutor-bloqueio-card button { min-height: 40px; padding: 0 15px; border: 1px solid #9056cd; border-radius: 9px; color: white; background: linear-gradient(120deg, #7136b0, #512981); font-size: 11px; font-weight: 800; cursor: pointer; }
+.tutor-form button:disabled { opacity: .45; cursor: not-allowed; }
+.tutor-painel-bloqueado .tutor-conversa, .tutor-painel-bloqueado .tutor-atalhos, .tutor-painel-bloqueado .tutor-form { filter: blur(3px); user-select: none; }
+.tutor-bloqueio { position: absolute; z-index: 2; inset: 0; display: grid; padding: 18px; place-items: center; background: #100c16a8; backdrop-filter: blur(2px); }
+.tutor-bloqueio-card { width: min(100%, 390px); padding: 26px; border: 1px solid #70518d; border-radius: 17px; background: linear-gradient(145deg, #21182c, #15111b); box-shadow: 0 20px 65px #0009; text-align: center; }
+.tutor-cadeado { display: grid; width: 43px; height: 43px; margin: 0 auto 14px; place-items: center; border: 1px solid #7952a0; border-radius: 14px; color: #dbbaff; background: #38234b; font-size: 21px; }
+.tutor-bloqueio-card strong { color: #f7efff; font-size: 16px; }
+.tutor-bloqueio-card p { margin: 9px 0 17px; color: #b9adbf; font-size: 11px; line-height: 1.65; }
+.tutor-bloqueio-card button { width: 100%; }
+.tutor-privacidade { margin: 10px 0 0; color: #82788a; font-size: 10px; text-align: center; }
+@media (max-width: 600px) {
+  .tutor-pagina { display: flex; min-height: max(420px, calc(100dvh - 170px)); flex-direction: column; }
+  .tutor-cabecalho { align-items: flex-start; flex-direction: row; gap: 10px; margin-bottom: 14px; }
+  .tutor-cabecalho > div { min-width: 0; }
+  .tutor-cabecalho h1 { font-size: clamp(23px, 7vw, 30px); }
+  .tutor-online { flex: 0 0 auto; margin-top: 8px; font-size: 10px; }
+  .tutor-painel { display: flex; min-height: 0; flex: 1; flex-direction: column; }
+  .tutor-conversa { min-height: 0; max-height: none; flex: 1 1 auto; padding: 14px 11px; scroll-padding-bottom: 12px; }
+  .tutor-mensagem { max-width: 96%; gap: 7px; }
+  .tutor-avatar { width: 31px; height: 31px; flex-basis: 31px; }
+  .tutor-balao { min-width: 0; padding: 10px 12px; }
+  .tutor-mensagem-texto { font-size: 12px; }
+  .tutor-atalhos { flex: 0 0 auto; padding: 0 12px 10px; }
+  .tutor-atalhos > div { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .tutor-atalhos > div::-webkit-scrollbar { display: none; }
+  .tutor-atalhos button { flex: 0 0 auto; min-height: 38px; }
+  .tutor-form { flex: 0 0 auto; align-items: flex-end; margin: 0 10px max(10px, env(safe-area-inset-bottom)); }
+  .tutor-form textarea { min-height: 44px; max-height: 100px; font-size: 16px; }
+  .tutor-form button { min-height: 44px; padding: 0 12px; }
+}
+
+@media (max-width: 380px) {
+  .tutor-cabecalho { flex-direction: column; }
+  .tutor-online { margin-top: 0; }
+  .tutor-pagina { min-height: max(400px, calc(100dvh - 150px)); }
+}

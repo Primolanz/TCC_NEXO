@@ -96,7 +96,7 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
 
   return (
     <main className="pagina-login animate-fade-in">
-      <CabecalhoPagina nomePagina={`Login ${titulo}`} />
+      <CabecalhoPagina nomePagina={`Login ${titulo}`} showBack={false} />
       <div className="conteudo-central-login">
         <section className="cartao-login" aria-labelledby="titulo-login">
           <h1 id="titulo-login" className="titulo-login">
@@ -169,15 +169,15 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
             </button>
           </form>
 
-          {perfilAtivo === "aluno" && (
+          {(perfilAtivo === "aluno" || perfilAtivo === "professor") && (
             <p className="rodape-login"><Link className="link-cadastro" to="/recuperar-senha">Esqueci minha senha</Link></p>
           )}
 
-          {perfilAtivo === "aluno" ? (
+          {perfilAtivo === "aluno" || perfilAtivo === "professor" ? (
             <p className="rodape-login">
               Não tem uma conta?
-              <Link className="link-cadastro" to="/cadastro/aluno">
-                Crie uma aqui
+              <Link className="link-cadastro" to={perfilAtivo === "professor" ? "/cadastro/professor" : "/cadastro/aluno"}>
+                {perfilAtivo === "professor" ? "Criar conta" : "Crie uma aqui"}
               </Link>
             </p>
           ) : (
