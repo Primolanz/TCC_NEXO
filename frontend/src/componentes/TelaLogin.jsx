@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import CampoSenha from "./CampoSenha.jsx";
 import CabecalhoPagina from "./CabecalhoPagina.jsx";
-import { apiClient, cleanedUrl, saveSession } from "../servicos/apiClient.js";
+import { apiClient, saveSession } from "../servicos/apiClient.js";
 import "../paginasCSS/Login.css";
 
 const caminhosPorPerfil = {
@@ -48,6 +48,8 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
 
     try {
       // 1. Requisitar login para a API Node.js (dinâmico)
+      const rawUrl = import.meta.env.VITE_API_URL || 'https://nexo-backend.onrender.com';
+      const cleanedUrl = rawUrl.replace(/^["'\[]+|["'\]\)]+$/g, '').replace(/\/+$/, '');
       const resposta = await fetch(`${cleanedUrl}/api/users/login`, {
         method: "POST",
         headers: {

@@ -1,13 +1,4 @@
-const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-export let cleanedUrl = rawUrl.trim()
-if (cleanedUrl.includes('](')) {
-  cleanedUrl = cleanedUrl.split('](')[0].replace(/^\[/, '')
-}
-cleanedUrl = cleanedUrl.replace(/^['"\[]+|['"\]\)]+$/g, '').replace(/\/+$/, '')
-if (!cleanedUrl.startsWith('http://') && !cleanedUrl.startsWith('https://')) {
-  cleanedUrl = `https://${cleanedUrl}`
-}
-
+export const cleanedUrl = (import.meta.env.VITE_API_URL || 'https://nexo-backend.onrender.com').replace(/^["'\[]+|["'\]\)]+$/g, '').replace(/\/+$/, '')
 const API_BASE_URL = `${cleanedUrl}/api`
 
 export function saveSession(session = {}) {
