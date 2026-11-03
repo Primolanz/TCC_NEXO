@@ -180,7 +180,7 @@ exports.getStudentPerformance = async (req, res) => {
     if (submissionsError) throw submissionsError;
     const byAssignment = new Map((submissions || []).map((item) => [item.assignment_id, item]));
     const now = Date.now();
-    const performance = (assignments || []).map((item) => {
+    const performance = await Promise.all((assignments || []).map(async (item) => {
       const submission = byAssignment.get(item.id);
       const submitted = submission?.status === 'SUBMITTED';
       let submissionLink = submitted ? submission.link_entrega : null;
@@ -190,7 +190,7 @@ exports.getStudentPerformance = async (req, res) => {
         submissionLink = signedLink.signedUrl;
       }
       return { ...item, status: submitted ? 'SUBMITTED' : 'PENDING', submitted_at: submitted ? (submission.submitted_at || null) : null, link_entrega: submissionLink, grade: submitted ? submission.grade : null, feedback: submitted ? submission.feedback : null, overdue: !submitted && Boolean(item.due_date) && Date.parse(item.due_date) < now };
-    });
+    }));
     return res.json({ student, class: classItem, completed_count: performance.filter((item) => item.status === 'SUBMITTED').length, assignment_count: performance.length, assignments: performance });
   } catch (error) {
     console.error('[Professor] Falha ao consultar desempenho:', error.message);
