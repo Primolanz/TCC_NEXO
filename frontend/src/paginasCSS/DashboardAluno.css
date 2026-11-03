@@ -256,6 +256,14 @@
 .aluno-atividade-concluir { display: inline-flex; min-height: 45px; align-items: center; justify-content: center; padding: 0 18px; border: 1px solid #408a6f; border-radius: 10px; color: #edfff7; background: linear-gradient(120deg, #207154, #15513f); font-size: 12px; font-weight: 800; transition: filter .2s ease, transform .2s ease; }
 .aluno-atividade-concluir:hover { transform: translateY(-1px); filter: brightness(1.12); }
 .aluno-atividade-concluir:disabled { cursor: wait; opacity: .65; }
+.aluno-link-entrega { display: grid; gap: 9px; margin: 0 0 16px; color: #d9cbe5; font-size: 12px; line-height: 1.5; }
+.aluno-link-entrega input { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid #49375a; border-radius: 9px; color: #f5edff; background: #17121c; outline: none; }
+.aluno-link-entrega input:focus { border-color: #a855f7; box-shadow: 0 0 0 3px #7c3aed33; }
+.aluno-link-entrega input[type="file"] { padding: 10px; color: #c4bacd; }
+.aluno-arquivo-selecionado { display: block; margin: -8px 0 14px; color: #d9baff; overflow-wrap: anywhere; }
+.aluno-entrega-link-status { display: grid; gap: 10px; margin: 10px 0 16px; color: #d8cde1; font-size: 12px; }
+.aluno-entrega-link-status a { width: fit-content; color: #c99bff; font-weight: 800; }
+.aluno-entrega-link-status p { margin: 0; }
 .aluno-atividade-concluida-mensagem { margin: 0; padding: 12px 14px; border: 1px solid #387967; border-radius: 10px; color: #b2f0d5; background: #17352e; font-size: 12px; }
 
 @media (max-width: 760px) {

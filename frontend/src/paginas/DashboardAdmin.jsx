@@ -11,7 +11,7 @@ const navigation = [
 ]
 
 function DashboardAdmin() {
-  const [overview, setOverview] = useState({ metrics: {}, pendingTeachers: [], users: [] })
+  const [overview, setOverview] = useState({ metrics: {}, pendingTeachers: [], users: [], activityFeed: [] })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
@@ -73,6 +73,12 @@ function DashboardAdmin() {
         { title: 'Professores Aprovados', value: overview.metrics.approvedTeachers || 0, badge: 'Acesso liberado', icon: '✓', tone: 'teal' },
       ]
 
+      cards.push(
+        { title: 'Turmas criadas', value: overview.metrics.classes || 0, badge: 'Em toda a plataforma', tone: 'violet' },
+        { title: 'Entregas neste mês', value: overview.metrics.monthlySubmissions || 0, badge: 'Atividades enviadas', tone: 'teal' },
+        { title: 'Interações com o Tutor', value: overview.metrics.tutorCalls || 0, badge: 'Desde o registro', tone: 'violet' },
+      )
+
       return <>
         <div className="role-metrics admin-metrics">
           {cards.map((card) => <article className={`role-card admin-metric-card admin-${card.tone}`} key={card.title}>
@@ -80,6 +86,7 @@ function DashboardAdmin() {
             <p>{card.title}</p><strong>{card.value}</strong><span className="role-badge">{card.badge}</span>
           </article>)}
         </div>
+        <div className="admin-home-lower">
         <section className="role-panel admin-overview-panel">
           <div className="role-panel-heading">
             <div><span className="role-kicker">CENTRAL DE GESTÃO</span><h2>Visão geral da plataforma</h2><p>{overview.metrics.totalUsers || 0} usuários cadastrados no NEXO.</p></div>
@@ -97,6 +104,11 @@ function DashboardAdmin() {
             </button>
           </div>
         </section>
+        <section className="role-panel admin-feed-panel" aria-labelledby="admin-feed-title">
+          <div className="role-panel-heading"><div><span className="role-kicker">ACONTECIMENTOS</span><h2 id="admin-feed-title">Atividades recentes</h2><p>Últimos cadastros e entregas registrados.</p></div><span className="role-badge">Atualizado agora</span></div>
+          {overview.activityFeed?.length ? <ol className="admin-activity-feed">{overview.activityFeed.map((event) => <li key={event.id}><span className={`admin-feed-dot ${event.type}`} aria-hidden="true" /><div><strong>{event.label}</strong><small>{event.created_at ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(event.created_at)) : ''}</small></div></li>)}</ol> : <p className="admin-feed-empty">As movimentações aparecerão aqui.</p>}
+        </section>
+        </div>
       </>
     }
 
@@ -125,6 +137,9 @@ function DashboardAdmin() {
         <article><span>Alunos</span><strong>{overview.metrics.students || 0}</strong></article>
         <article><span>Professores aprovados</span><strong>{overview.metrics.approvedTeachers || 0}</strong></article>
         <article><span>Professores aguardando análise</span><strong>{overview.metrics.pendingTeachers || 0}</strong></article>
+        <article><span>Turmas criadas</span><strong>{overview.metrics.classes || 0}</strong></article>
+        <article><span>Entregas neste mês</span><strong>{overview.metrics.monthlySubmissions || 0}</strong></article>
+        <article><span>Interações registradas com o Tutor</span><strong>{overview.metrics.tutorCalls || 0}</strong></article>
       </div>
     </section>
 

@@ -78,12 +78,12 @@ export const questoesDiagnosticas = [
   {
     id: 7,
     materia: 'Português',
-    enunciado: 'Qual palavra é um sinônimo de “feliz”?',
+    enunciado: 'Na frase: "O aluno respondeu ao simulado calmamente", a palavra "calmamente" exerce a função de:',
     alternativas: [
-      { id: 'a', texto: 'A) Triste' },
-      { id: 'b', texto: 'B) Alegre' },
-      { id: 'c', texto: 'C) Bravo' },
-      { id: 'd', texto: 'D) Cansado' },
+      { id: 'a', texto: 'A) Adjetivo' },
+      { id: 'b', texto: 'B) Advérbio de modo' },
+      { id: 'c', texto: 'C) Substantivo' },
+      { id: 'd', texto: 'D) Verbo' },
     ],
     respostaCorreta: 'b',
   },

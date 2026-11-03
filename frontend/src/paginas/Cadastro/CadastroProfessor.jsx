@@ -5,9 +5,18 @@ import CabecalhoPagina from '../../componentes/CabecalhoPagina.jsx'
 import CampoSenha from '../../componentes/CampoSenha.jsx'
 import { clearSession } from '../../servicos/apiClient.js'
 
+const toTitleCase = (str) => {
+  const preposicoes = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
+  return str.toLowerCase().split(' ').filter(Boolean).map((word, index) => {
+    if (index !== 0 && preposicoes.has(word)) return word;
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' ');
+};
+
 function CadastroProfessor() {
   const navegar = useNavigate()
   const [senha, definirSenha] = useState('')
+  const [nome, definirNome] = useState('')
   const [confirmarSenha, definirConfirmarSenha] = useState('')
   const [erro, definirErro] = useState('')
   const [carregando, definirCarregando] = useState(false)
@@ -28,7 +37,7 @@ function CadastroProfessor() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: form.get('nome'),
+          name: toTitleCase(nome),
           email: form.get('email'),
           password: senha,
           role: 'TEACHER',
@@ -68,7 +77,7 @@ function CadastroProfessor() {
           <form className="formulario-login" onSubmit={cadastrarProfessor}>
             <div className="grupo-campo">
               <label className="rotulo-campo" htmlFor="nome-professor">NOME COMPLETO</label>
-              <input className="campo-login" id="nome-professor" name="nome" type="text" placeholder="Digite aqui seu nome" required />
+              <input className="campo-login" id="nome-professor" name="nome" type="text" placeholder="Digite aqui seu nome" value={nome} onChange={(evento) => definirNome(`${toTitleCase(evento.target.value)}${evento.target.value.endsWith(' ') ? ' ' : ''}`)} required />
             </div>
             <div className="grupo-campo">
               <label className="rotulo-campo" htmlFor="email-professor">E-MAIL EDUCACIONAL/PESSOAL</label>

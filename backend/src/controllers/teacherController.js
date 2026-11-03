@@ -175,7 +175,7 @@ exports.getStudentPerformance = async (req, res) => {
     if (!student) return res.status(404).json({ error: 'Aluno não encontrado.' });
     const assignmentIds = (assignments || []).map((item) => item.id);
     const { data: submissions, error: submissionsError } = assignmentIds.length
-      ? await supabase.from('assignment_submissions').select('assignment_id, status, submitted_at').eq('student_id', student.id).in('assignment_id', assignmentIds)
+      ? await supabase.from('assignment_submissions').select('assignment_id, status, submitted_at, link_entrega, grade, feedback').eq('student_id', student.id).in('assignment_id', assignmentIds)
       : { data: [], error: null };
     if (submissionsError) throw submissionsError;
     const byAssignment = new Map((submissions || []).map((item) => [item.assignment_id, item]));
@@ -183,11 +183,47 @@ exports.getStudentPerformance = async (req, res) => {
     const performance = (assignments || []).map((item) => {
       const submission = byAssignment.get(item.id);
       const submitted = submission?.status === 'SUBMITTED';
-      return { ...item, status: submitted ? 'SUBMITTED' : 'PENDING', submitted_at: submitted ? (submission.submitted_at || null) : null, overdue: !submitted && Boolean(item.due_date) && Date.parse(item.due_date) < now };
+      let submissionLink = submitted ? submission.link_entrega : null;
+      if (submissionLink?.startsWith('storage://')) {
+        const { data: signedLink, error: signedError } = await supabase.storage.from('assignment-submissions').createSignedUrl(submissionLink.slice('storage://'.length), 3600);
+        if (signedError) throw signedError;
+        submissionLink = signedLink.signedUrl;
+      }
+      return { ...item, status: submitted ? 'SUBMITTED' : 'PENDING', submitted_at: submitted ? (submission.submitted_at || null) : null, link_entrega: submissionLink, grade: submitted ? submission.grade : null, feedback: submitted ? submission.feedback : null, overdue: !submitted && Boolean(item.due_date) && Date.parse(item.due_date) < now };
     });
     return res.json({ student, class: classItem, completed_count: performance.filter((item) => item.status === 'SUBMITTED').length, assignment_count: performance.length, assignments: performance });
   } catch (error) {
     console.error('[Professor] Falha ao consultar desempenho:', error.message);
     return res.status(500).json({ error: 'Não foi possível carregar o desempenho do aluno.' });
+  }
+};
+
+exports.updateSubmissionReview = async (req, res) => {
+  try {
+    if (!await ensureTeacher(req.user.id)) return res.status(403).json({ error: 'Apenas professores aprovados podem avaliar entregas.' });
+    const grade = req.body?.grade === '' || req.body?.grade === null || req.body?.grade === undefined ? null : Number(req.body.grade);
+    const feedback = String(req.body?.feedback || '').trim();
+    if (grade !== null && (!Number.isFinite(grade) || grade < 0 || grade > 100)) return res.status(400).json({ error: 'A nota deve estar entre 0 e 100.' });
+    if (feedback.length > 3000) return res.status(400).json({ error: 'O feedback deve ter até 3000 caracteres.' });
+
+    const { data: assignment, error: assignmentError } = await supabase.from('assignments').select('id, class_id').eq('id', req.params.assignmentId).maybeSingle();
+    if (assignmentError) throw assignmentError;
+    if (!assignment) return res.status(404).json({ error: 'Atividade não encontrada.' });
+    const classItem = await getOwnedClass(assignment.class_id, req.user.id);
+    if (!classItem) return res.status(403).json({ error: 'Esta atividade não pertence às suas turmas.' });
+
+    const { data: submission, error } = await supabase.from('assignment_submissions')
+      .update({ grade, feedback: feedback || null })
+      .eq('assignment_id', assignment.id)
+      .eq('student_id', req.params.studentId)
+      .eq('status', 'SUBMITTED')
+      .select('assignment_id, student_id, grade, feedback')
+      .maybeSingle();
+    if (error) throw error;
+    if (!submission) return res.status(404).json({ error: 'Entrega enviada não encontrada.' });
+    return res.json({ submission });
+  } catch (error) {
+    console.error('[Professor] Falha ao salvar avaliação:', error.message);
+    return res.status(500).json({ error: 'Não foi possível salvar a nota e o feedback.' });
   }
 };

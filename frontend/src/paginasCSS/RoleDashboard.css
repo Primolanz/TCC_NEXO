@@ -103,7 +103,7 @@
 .role-dashboard-admin .dashboard-cabecalho { border-bottom-color: #252532; background: #111119; }
 .role-dashboard-admin .dashboard-conteudo { width: min(100%, 1260px); padding-top: 46px; }
 .role-dashboard-admin .dashboard-boas-vindas h1 { color: #f4f0fa; }
-.role-dashboard-admin .role-metrics { align-items: stretch; gap: 18px; }
+.role-dashboard-admin .role-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); align-items: stretch; gap: 18px; }
 .role-dashboard-admin .admin-metric-card { display: grid; min-height: 158px; grid-template-columns: 46px minmax(0, 1fr); grid-template-rows: auto 1fr auto; align-items: center; gap: 8px 15px; padding: 21px; border: 1px solid #2A2A38; border-radius: 16px; background: #15151f; box-shadow: 0 12px 28px #0003; }
 .role-dashboard-admin .admin-metric-card::before { background: radial-gradient(circle, #984dff12, transparent 72%); }
 .role-dashboard-admin .admin-metric-card > .role-card-icon { grid-column: 1; grid-row: 1 / 4; }
@@ -119,16 +119,36 @@
 .role-dashboard-admin .admin-overview-link > span:nth-child(2) { gap: 5px; }
 .role-dashboard-admin .admin-overview-link strong { color: #eee3fb; font-size: 13px; }
 .role-dashboard-admin .admin-overview-link small { color: #aaa2b3; }
-.admin-shortcut-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-.role-dashboard-admin .admin-overview-link { display: flex; min-width: 0; min-height: 116px; align-items: center; justify-content: space-between; gap: 13px; padding: 16px; text-align: left; transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease, background .2s ease; }
+.admin-shortcut-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.role-dashboard-admin .admin-overview-link { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; min-width: 0; min-height: 92px; align-items: center; justify-content: initial; gap: 14px; padding: 18px; border: 1px solid rgba(255, 255, 255, .1); text-align: left; transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease, background .2s ease; }
 .role-dashboard-admin .admin-overview-link:hover { transform: translateY(-3px); box-shadow: 0 12px 24px #0004; }
-.admin-shortcut-copy { display: grid; min-width: 0; flex: 1; gap: 6px; }
+.admin-shortcut-copy { display: grid; min-width: 0; gap: 6px; overflow-wrap: normal; }
 .admin-shortcut-copy strong { line-height: 1.45; }
+.admin-shortcut-copy small, .admin-shortcut-copy strong { overflow-wrap: anywhere; }
 .admin-shortcut-copy small { line-height: 1.4; }
 .admin-shortcut-count { display: grid; min-width: 48px; justify-items: end; color: #e1caff; font-size: 21px; font-weight: 800; }
 .admin-shortcut-count small { color: #aaa2b3; font-size: 9px; font-weight: 600; }
 .admin-shortcut-arrow { flex: 0 0 auto; color: #c99bff; font-size: 20px; }
 .admin-global-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.admin-feed-panel { min-width: 0; }
+.admin-home-lower { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr); align-items: stretch; gap: 16px; }
+.admin-home-lower > .role-panel { height: 100%; min-height: 100%; }
+.admin-activity-feed { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.admin-activity-feed li { display: flex; align-items: flex-start; gap: 12px; padding: 14px 2px; border-bottom: 1px solid #2d2935; }
+.admin-activity-feed li:last-child { border-bottom: 0; }
+.admin-activity-feed li > div { display: grid; min-width: 0; gap: 5px; }
+.admin-activity-feed strong { color: #eee8f6; font-size: 12px; line-height: 1.45; }
+.admin-activity-feed small, .admin-feed-empty { color: #aaa2b3; font-size: 11px; }
+.admin-feed-dot { width: 10px; height: 10px; flex: 0 0 auto; margin-top: 3px; border-radius: 50%; background: #a855f7; box-shadow: 0 0 12px #a855f788; }
+.admin-feed-dot.submission { background: #34d399; box-shadow: 0 0 12px #34d39988; }
+.teacher-submission-list { display: grid; gap: 12px; margin: 16px 0 24px; }
+.teacher-submission-card { display: grid; gap: 9px; padding: 14px; border: 1px solid #473653; border-radius: 12px; background: #17121c; }
+.teacher-submission-card > strong { color: #f2eafd; font-size: 13px; }
+.teacher-submission-card > small { color: #aaa0b4; font-size: 11px; }
+.teacher-submission-card > a { width: fit-content; color: #c99bff; font-size: 12px; font-weight: 800; }
+.teacher-submission-card label { display: grid; gap: 6px; color: #c8bdcf; font-size: 11px; }
+.teacher-submission-card input, .teacher-submission-card textarea { width: 100%; padding: 9px 10px; border: 1px solid #43334f; border-radius: 8px; color: #f4eefa; background: #100d14; }
+.teacher-submission-card textarea { min-height: 72px; resize: vertical; }
 .teacher-metrics-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: 17px; }
 .role-dashboard-teacher .teacher-metric-card { display: grid; min-width: 0; min-height: 164px; grid-template-columns: 46px minmax(0, 1fr) auto; grid-template-rows: minmax(50px, 1fr) auto; align-items: center; gap: 12px; padding: 20px; border: 1px solid #44334f; border-radius: 16px; background: linear-gradient(145deg, #1c1724, #121015); box-shadow: 0 12px 28px #0004; transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
 .role-dashboard-teacher .teacher-metric-card:hover { transform: translateY(-3px); border-color: #8b5bb0; box-shadow: 0 17px 34px #0006; }
@@ -139,13 +159,15 @@
 .teacher-metric-shortcut:hover { transform: translateY(-1px); border-color: #9862c2; background: #2c1e3a; }
 .teacher-metric-shortcut span { color: #c99bff; font-size: 16px; }
 @media (max-width: 900px) {
-  .admin-shortcut-grid { grid-template-columns: 1fr; }
+  .admin-shortcut-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-home-lower { grid-template-columns: 1fr; }
 }
 @media (max-width: 760px) {
   .teacher-metrics-grid { grid-template-columns: 1fr; }
   .admin-global-metrics { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
+  .admin-shortcut-grid { grid-template-columns: 1fr; }
   .role-dashboard-admin .admin-overview-link { align-items: stretch; flex-direction: column; gap: 10px; padding: 16px; }
   .admin-shortcut-count { justify-items: start; }
   .role-dashboard-teacher .teacher-metric-card { min-height: 154px; padding: 17px; }

@@ -1,4 +1,59 @@
 const supabase = require('../config/adminSupabase');
+const SUBMISSION_BUCKET = 'assignment-submissions';
+const INVALID_SUBMISSION_LINK = 'Envie apenas links válidos de entrega (ex: Google Drive, GitHub, Figma, Docs, Canva ou PDF). Links de redes sociais e vídeos não são aceitos.';
+
+function getAllowedSubmissionUrl(value) {
+  try {
+    const url = new URL(String(value || '').trim());
+    if (url.protocol !== 'https:' || url.username || url.password) return null;
+    const host = url.hostname.toLowerCase();
+    const blockedHosts = ['youtube.com', 'youtu.be', 'tiktok.com', 'instagram.com', 'facebook.com'];
+    if (blockedHosts.some((domain) => host === domain || host.endsWith(`.${domain}`))) return null;
+    const allowedHosts = ['drive.google.com', 'docs.google.com', 'github.com', 'figma.com', 'canva.com', 'notion.so', 'onedrive.live.com'];
+    const isAllowedHost = allowedHosts.some((domain) => host === domain || host.endsWith(`.${domain}`));
+    return isAllowedHost || url.pathname.toLowerCase().endsWith('.pdf') ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+async function getStudentAssignment(req, res) {
+  const profile = await getUserRole(req.user.id);
+  if (profile.role !== 'STUDENT') { res.status(403).json({ error: 'Somente alunos podem enviar atividades.' }); return null; }
+  const { data: assignment, error: assignmentError } = await supabase.from('assignments').select('id, class_id').eq('id', req.params.id).maybeSingle();
+  if (assignmentError) throw assignmentError;
+  if (!assignment) { res.status(404).json({ error: 'Atividade não encontrada.' }); return null; }
+  const { data: membership, error } = await supabase.from('class_students').select('class_id').eq('class_id', assignment.class_id).eq('student_id', req.user.id).maybeSingle();
+  if (error) throw error;
+  if (!membership) { res.status(403).json({ error: 'Você não está matriculado nesta turma.' }); return null; }
+  return assignment;
+}
+
+async function resolveSubmissionLink(value) {
+  if (!String(value || '').startsWith('storage://')) return value || null;
+  const path = String(value).slice('storage://'.length);
+  const { data, error } = await supabase.storage.from(SUBMISSION_BUCKET).createSignedUrl(path, 3600);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
+exports.createSubmissionUploadUrl = async (req, res) => {
+  try {
+    const extension = typeof req.body?.file_name === 'string' ? req.body.file_name.toLowerCase().match(/\.(pdf|docx|doc|png|jpg)$/)?.[1] : null;
+    const mimeByExtension = { pdf: 'application/pdf', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', doc: 'application/msword', png: 'image/png', jpg: 'image/jpeg' };
+    if (!extension || mimeByExtension[extension] !== req.body?.content_type || !Number.isInteger(req.body?.size) || req.body.size < 1 || req.body.size > 10 * 1024 * 1024) {
+      return res.status(400).json({ error: 'Use um arquivo PDF, DOC, DOCX, PNG ou JPG de até 10 MB.' });
+    }
+    if (!await getStudentAssignment(req, res)) return;
+    const path = `${req.user.id}/${req.params.id}/${require('crypto').randomUUID()}.${extension}`;
+    const { data, error } = await supabase.storage.from(SUBMISSION_BUCKET).createSignedUploadUrl(path);
+    if (error) throw error;
+    return res.json({ path, signedUrl: data.signedUrl });
+  } catch (error) {
+    console.error('[Atividades] Falha ao iniciar upload:', error.message);
+    return res.status(500).json({ error: 'Não foi possível preparar o upload do arquivo.' });
+  }
+};
 
 function isValidIsoDueDate(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) return false;
@@ -116,7 +171,7 @@ exports.listStudentAssignments = async (req, res) => {
     const { data: submissions, error: submissionsError } = assignmentIds.length
       ? await supabase
         .from('assignment_submissions')
-        .select('assignment_id, status')
+        .select('assignment_id, status, link_entrega, submitted_at, grade, feedback')
         .eq('student_id', req.user.id)
         .in('assignment_id', assignmentIds)
       : { data: [], error: null };
@@ -124,11 +179,13 @@ exports.listStudentAssignments = async (req, res) => {
     const submissionStatuses = new Map((submissions || []).map((item) => [item.assignment_id, item.status]));
 
     return res.json({
-      assignments: (assignments || []).map((item) => ({
+      assignments: await Promise.all((assignments || []).map(async (item) => ({
         ...item,
         class_name: classNames.get(item.class_id) || 'Turma',
         status: submissionStatuses.get(item.id) === 'SUBMITTED' ? 'SUBMITTED' : 'PENDING',
-      })),
+        ...(submissions || []).find((submission) => submission.assignment_id === item.id),
+        link_entrega: await resolveSubmissionLink((submissions || []).find((submission) => submission.assignment_id === item.id)?.link_entrega),
+      }))),
     });
   } catch (error) {
     console.error('[Atividades] Falha ao listar atividades do aluno:', error.message);
@@ -138,6 +195,13 @@ exports.listStudentAssignments = async (req, res) => {
 
 exports.submitAssignment = async (req, res) => {
   try {
+    const storagePath = String(req.body?.storage_path || '').trim();
+    const submissionUrl = getAllowedSubmissionUrl(req.body?.link_entrega);
+    const ownsStoragePath = storagePath.startsWith(`${req.user.id}/${req.params.id}/`) && !storagePath.includes('..');
+    if ((!submissionUrl && !ownsStoragePath) || (submissionUrl && storagePath)) return res.status(400).json({ error: INVALID_SUBMISSION_LINK });
+    if ((!submissionUrl && !ownsStoragePath) || (submissionUrl && storagePath)) {
+      return res.status(400).json({ error: 'Cole um link válido iniciado por http:// ou https://.' });
+    }
     const profile = await getUserRole(req.user.id);
     if (profile.role !== 'STUDENT') {
       return res.status(403).json({ error: 'Somente alunos podem concluir atividades.' });
@@ -168,27 +232,28 @@ exports.submitAssignment = async (req, res) => {
       .maybeSingle();
     if (existingError) throw existingError;
 
+    const storedLink = storagePath ? `storage://${storagePath}` : submissionUrl.toString();
     const { data: submission, error: saveError } = existing
       ? await supabase
         .from('assignment_submissions')
-        .update({ status: 'SUBMITTED', submitted_at: new Date().toISOString() })
+        .update({ status: 'SUBMITTED', submitted_at: new Date().toISOString(), link_entrega: storedLink })
         .eq('assignment_id', assignment.id)
         .eq('student_id', req.user.id)
-        .select('assignment_id, student_id, status')
+        .select('assignment_id, student_id, status, submitted_at, link_entrega, grade, feedback')
         .single()
       : await supabase
         .from('assignment_submissions')
-        .insert({ assignment_id: assignment.id, student_id: req.user.id, status: 'SUBMITTED', submitted_at: new Date().toISOString() })
-        .select('assignment_id, student_id, status')
+        .insert({ assignment_id: assignment.id, student_id: req.user.id, status: 'SUBMITTED', submitted_at: new Date().toISOString(), link_entrega: storedLink })
+        .select('assignment_id, student_id, status, submitted_at, link_entrega, grade, feedback')
         .single();
     if (saveError) {
       if (saveError.code === '23505') {
         const { data: updated, error: updateError } = await supabase
           .from('assignment_submissions')
-          .update({ status: 'SUBMITTED', submitted_at: new Date().toISOString() })
+          .update({ status: 'SUBMITTED', submitted_at: new Date().toISOString(), link_entrega: storedLink })
           .eq('assignment_id', assignment.id)
           .eq('student_id', req.user.id)
-          .select('assignment_id, student_id, status')
+          .select('assignment_id, student_id, status, submitted_at, link_entrega, grade, feedback')
           .single();
         if (updateError) throw updateError;
         return res.json({ message: 'Atividade marcada como concluída.', submission: updated });

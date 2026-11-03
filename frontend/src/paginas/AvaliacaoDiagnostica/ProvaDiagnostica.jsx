@@ -147,7 +147,7 @@ function ProvaDiagnostica() {
             <section className="cartao-questao-diagnostica">
               <header className="cabecalho-questao-diagnostica">
                 <h1>Questão {indiceAtual + 1}</h1>
-                <span>{questao.subject}</span>
+                <span>{({ portuguese: 'Língua Portuguesa', mathematics: 'Matemática' })[String(questao.subject).toLowerCase()] || questao.subject}</span>
               </header>
               <p className="enunciado-questao">{questao.statement}</p>
               <div className="alternativas-questao">

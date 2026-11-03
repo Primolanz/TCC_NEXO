@@ -142,3 +142,10 @@
   .cartao-login { width: 100%; max-width: 460px; padding: clamp(18px, 5vw, 26px); }
   .formulario-login input, .formulario-login select, .formulario-login textarea { max-width: 100%; }
 }
+@keyframes loginColdStartSpin { to { transform: rotate(360deg); } }
+.login-cold-start-spinner { display: inline-block; width: 18px; height: 18px; flex: 0 0 auto; border: 2px solid #ffffff4d; border-top-color: #c084fc; border-radius: 50%; animation: loginColdStartSpin .75s linear infinite; }
+.login-cold-start-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; padding: 20px; place-items: center; background: #080610d9; backdrop-filter: blur(8px); }
+.login-cold-start-modal { display: grid; width: min(100%, 420px); justify-items: center; gap: 15px; padding: 30px 26px; border: 1px solid #a855f755; border-radius: 18px; color: #f5edff; background: linear-gradient(145deg, #21172e, #111018); box-shadow: 0 25px 80px #0009, 0 0 35px #7c3aed22; text-align: center; }
+.login-cold-start-modal .login-cold-start-spinner { width: 32px; height: 32px; border-width: 3px; }
+.login-cold-start-modal strong { color: #e9d5ff; font-size: 15px; }
+.login-cold-start-modal p { margin: 0; color: #c4b5d0; font-size: 13px; line-height: 1.55; }

@@ -5,6 +5,14 @@ import CabecalhoPagina from "../../componentes/CabecalhoPagina.jsx";
 import CampoSenha from "../../componentes/CampoSenha.jsx";
 import { saveSession } from "../../servicos/apiClient.js";
 
+const toTitleCase = (str) => {
+  const preposicoes = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
+  return str.toLowerCase().split(' ').filter(Boolean).map((word, index) => {
+    if (index !== 0 && preposicoes.has(word)) return word;
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }).join(' ');
+};
+
 function CadastroAluno() {
   const navegar = useNavigate();
   const [nome, definirNome] = useState("");
@@ -36,8 +44,8 @@ function CadastroAluno() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          nome,
-          name: nome, // Envia nas duas variantes
+          nome: toTitleCase(nome),
+          name: toTitleCase(nome), // Envia nas duas variantes
           email,
           senha,
           password: senha, // Envia nas duas variantes
@@ -129,7 +137,7 @@ function CadastroAluno() {
                 type="text"
                 placeholder="Digite aqui seu nome"
                 value={nome}
-                onChange={(e) => definirNome(e.target.value)}
+                onChange={(e) => definirNome(`${toTitleCase(e.target.value)}${e.target.value.endsWith(' ') ? ' ' : ''}`)}
                 required
               />
             </div>

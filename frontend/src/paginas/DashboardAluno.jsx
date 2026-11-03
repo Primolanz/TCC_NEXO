@@ -18,6 +18,17 @@ const ABAS = [
   { id: 'tutor', label: 'NEXO', icon: <Bot /> },
 ]
 
+const INVALID_SUBMISSION_LINK = 'Envie apenas links válidos de entrega (ex: Google Drive, GitHub, Figma, Docs, Canva ou PDF). Links de redes sociais e vídeos não são aceitos.'
+function isAllowedSubmissionLink(value) {
+  try {
+    const url = new URL(String(value || '').trim())
+    const domains = ['drive.google.com', 'docs.google.com', 'github.com', 'figma.com', 'canva.com', 'notion.so', 'onedrive.live.com']
+    const blocked = ['youtube.com', 'youtu.be', 'tiktok.com', 'instagram.com', 'facebook.com']
+    if (blocked.some((domain) => url.hostname === domain || url.hostname.endsWith(`.${domain}`))) return false
+    return url.protocol === 'https:' && !url.username && !url.password && (domains.some((domain) => url.hostname === domain || url.hostname.endsWith(`.${domain}`)) || url.pathname.toLowerCase().endsWith('.pdf'))
+  } catch { return false }
+}
+
 function parseJsonValue(value) {
   if (typeof value !== 'string') return value
   const text = value.trim()
@@ -184,6 +195,8 @@ function DashboardAluno() {
   const [atividadeSelecionada, setAtividadeSelecionada] = useState(null)
   const [enviandoConclusao, setEnviandoConclusao] = useState(false)
   const [erroConclusao, setErroConclusao] = useState('')
+  const [arquivoEntrega, setArquivoEntrega] = useState(null)
+  const [linkEntrega, setLinkEntrega] = useState('')
   const [codigoTurma, setCodigoTurma] = useState('')
   const [estadoTurmas, setEstadoTurmas] = useState({ loading: true, submitting: false, message: '', error: '' })
   const [erro, setErro] = useState('')
@@ -238,13 +251,46 @@ function DashboardAluno() {
 
   async function marcarComoConcluida() {
     if (!atividadeSelecionada || atividadeSelecionada.status === 'SUBMITTED') return
+    if (!arquivoEntrega && !isAllowedSubmissionLink(linkEntrega)) { setErroConclusao(INVALID_SUBMISSION_LINK); return }
+    if (!arquivoEntrega) {
+    try {
+      const url = new URL(linkEntrega.trim())
+      if (!['http:', 'https:'].includes(url.protocol)) throw new Error()
+    } catch {
+      setErroConclusao('Cole um link válido iniciado por http:// ou https://.')
+      return
+    }
+    }
     setEnviandoConclusao(true)
     setErroConclusao('')
     try {
-      const response = await apiClient(`/assignments/${atividadeSelecionada.id}/submit`, { method: 'POST' })
+      let submissionPayload = { link_entrega: linkEntrega.trim() }
+      if (arquivoEntrega) {
+        const mimeByExtension = { pdf: 'application/pdf', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', doc: 'application/msword', png: 'image/png', jpg: 'image/jpeg' }
+        const extension = arquivoEntrega.name.toLowerCase().split('.').pop()
+        const contentType = mimeByExtension[extension]
+        if (!contentType || arquivoEntrega.size > 10 * 1024 * 1024) throw new Error('Use um arquivo PDF, DOC, DOCX, PNG ou JPG de até 10 MB.')
+        const ticketResponse = await apiClient(`/assignments/${atividadeSelecionada.id}/upload-url`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file_name: arquivoEntrega.name, content_type: contentType, size: arquivoEntrega.size }) })
+        const ticket = await ticketResponse.json()
+        if (!ticketResponse.ok) throw new Error(ticket.error || 'Não foi possível preparar o upload.')
+        const uploadResponse = await fetch(ticket.signedUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: arquivoEntrega })
+        if (!uploadResponse.ok) throw new Error('Não foi possível enviar o arquivo. Tente novamente.')
+        submissionPayload = { storage_path: ticket.path }
+      }
+      const response = await apiClient(`/assignments/${atividadeSelecionada.id}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(submissionPayload),
+      })
       const body = await response.json()
       if (!response.ok) throw new Error(body.error || 'Não foi possível concluir a atividade.')
-      const atualizada = { ...atividadeSelecionada, status: 'SUBMITTED' }
+      let submission = body.submission
+      if (submissionPayload.storage_path) {
+        const refreshed = await apiClient('/assignments/student')
+        const refreshedBody = await refreshed.json()
+        submission = refreshedBody.assignments?.find((item) => item.id === atividadeSelecionada.id) || submission
+      }
+      const atualizada = { ...atividadeSelecionada, ...submission, status: 'SUBMITTED' }
       setAtividadeSelecionada(atualizada)
       setAtividades((current) => current.map((item) => item.id === atualizada.id ? atualizada : item))
     } catch (error) {
@@ -539,8 +585,8 @@ function DashboardAluno() {
             <div className="dashboard-titulo-secao"><h1 id="aluno-atividades-titulo">Tarefas e atividades</h1><span>Atividades compartilhadas pelos professores das suas turmas.</span></div>
             {erroAtividades && <p className="aluno-turmas-feedback erro" role="alert">{erroAtividades}</p>}
             {carregandoAtividades ? <p className="aluno-turmas-vazio">Carregando atividades…</p> : atividades.length ? <div className="aluno-atividades-lista">
-              {atividades.map((atividade) => <article className="aluno-atividade-card" key={atividade.id} role="button" tabIndex={0} aria-haspopup="dialog" onClick={() => { setErroConclusao(''); setAtividadeSelecionada(atividade) }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setErroConclusao(''); setAtividadeSelecionada(atividade) } }}>
-                <header><div><span className="aluno-turmas-kicker">{atividade.class_name}</span><h2>{atividade.title}</h2></div><span className={`aluno-atividade-status ${atividade.status === 'SUBMITTED' ? 'concluida' : ''}`}>{atividade.status === 'SUBMITTED' ? 'Concluída' : 'Pendente'}</span></header>
+              {atividades.map((atividade) => <article className="aluno-atividade-card" key={atividade.id} role="button" tabIndex={0} aria-haspopup="dialog" onClick={() => { setErroConclusao(''); setLinkEntrega(''); setArquivoEntrega(null); setAtividadeSelecionada(atividade) }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setErroConclusao(''); setLinkEntrega(''); setArquivoEntrega(null); setAtividadeSelecionada(atividade) } }}>
+                <header><div><span className="aluno-turmas-kicker">{atividade.class_name}</span><h2>{atividade.title}</h2></div><span className={`aluno-atividade-status ${atividade.status === 'SUBMITTED' ? 'concluida' : ''}`}>{atividade.status === 'SUBMITTED' ? 'Entregue' : 'Pendente'}</span></header>
                 <p className="aluno-atividade-descricao">{atividade.description || 'Sem instruções adicionais.'}</p>
                 <footer><span>Data e hora limite</span><strong>{formatarDataHoraEntrega(atividade.due_date)}</strong></footer>
               </article>)}
@@ -552,10 +598,12 @@ function DashboardAluno() {
                 <h2 id="atividade-modal-titulo">{atividadeSelecionada.title}</h2>
                 <div className="aluno-atividade-modal-prazo"><span>Data e hora limite</span><strong>{formatarDataHoraEntrega(atividadeSelecionada.due_date)}</strong></div>
                 <div className="aluno-atividade-modal-conteudo"><h3>Instruções e conteúdo</h3><p>{atividadeSelecionada.description || 'O professor não adicionou instruções para esta atividade.'}</p></div>
+                {atividadeSelecionada.status !== 'SUBMITTED' && <><label className="aluno-link-entrega">Cole aqui o link do seu trabalho ou arquivo (ex: Google Drive, GitHub, Figma, Docs, Canva, PDF)<input type="url" value={linkEntrega} onChange={(event) => { setLinkEntrega(event.target.value); setArquivoEntrega(null) }} placeholder="https://..." disabled={Boolean(arquivoEntrega)} required={!arquivoEntrega} /></label><label className="aluno-link-entrega">Ou anexe um arquivo do seu computador<input type="file" accept=".pdf,.docx,.doc,.png,.jpg" onChange={(event) => { setArquivoEntrega(event.target.files?.[0] || null); if (event.target.files?.[0]) setLinkEntrega('') }} /></label>{arquivoEntrega && <small className="aluno-arquivo-selecionado">Arquivo: {arquivoEntrega.name}</small>}</>}
+                {atividadeSelecionada.status === 'SUBMITTED' && <div className="aluno-entrega-link-status">{atividadeSelecionada.link_entrega && <a href={atividadeSelecionada.link_entrega} target="_blank" rel="noopener noreferrer">📎 Visualizar link enviado</a>}{atividadeSelecionada.grade !== null && atividadeSelecionada.grade !== undefined && <p>Nota: {atividadeSelecionada.grade}/100{atividadeSelecionada.feedback ? ` · ${atividadeSelecionada.feedback}` : ''}</p>}</div>}
                 {erroConclusao && <p className="aluno-turmas-feedback erro" role="alert">{erroConclusao}</p>}
                 {atividadeSelecionada.status === 'SUBMITTED'
-                  ? <p className="aluno-atividade-concluida-mensagem" role="status">Atividade marcada como concluída.</p>
-                  : <button className="aluno-atividade-concluir" type="button" onClick={marcarComoConcluida} disabled={enviandoConclusao}>{enviandoConclusao ? 'Salvando…' : 'Marcar como Concluída'}</button>}
+                  ? <p className="aluno-atividade-concluida-mensagem" role="status">Atividade entregue.</p>
+                  : <button className="aluno-atividade-concluir" type="button" onClick={marcarComoConcluida} disabled={enviandoConclusao}>{enviandoConclusao ? 'Enviando…' : 'Entregar atividade'}</button>}
               </section>
             </div>}
           </section>}

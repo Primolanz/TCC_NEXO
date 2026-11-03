@@ -75,6 +75,7 @@ function DashboardProfessor() {
   const [selectedStudent, setSelectedStudent] = useState(null)
   const [studentPerformance, setStudentPerformance] = useState(null)
   const [studentLoading, setStudentLoading] = useState(false)
+  const [savingReviewId, setSavingReviewId] = useState('')
   const [studentError, setStudentError] = useState('')
   const [classStudents, setClassStudents] = useState({})
   const [studentsLoading, setStudentsLoading] = useState(false)
@@ -90,6 +91,29 @@ function DashboardProfessor() {
   const dataEntregaISO = dataEntrega.dia && dataEntrega.mes && dataEntrega.ano
     ? `${dataEntrega.ano}-${dataEntrega.mes}-${dataEntrega.dia}`
     : ''
+
+  async function salvarRevisao(assignment) {
+    setSavingReviewId(assignment.id)
+    setStudentError('')
+    try {
+      const response = await apiClient(`/teacher/assignments/${encodeURIComponent(assignment.id)}/submissions/${encodeURIComponent(selectedStudent.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grade: assignment.grade ?? '', feedback: assignment.feedback || '' }),
+      })
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.error || 'Falha ao salvar a avaliacao.')
+      setStudentPerformance((current) => ({ ...current, assignments: current.assignments.map((item) => item.id === assignment.id ? { ...item, ...body.submission } : item) }))
+    } catch (error) {
+      setStudentError(error.message)
+    } finally {
+      setSavingReviewId('')
+    }
+  }
+
+  function atualizarCampoAvaliacao(assignmentId, field, value) {
+    setStudentPerformance((current) => ({ ...current, assignments: current.assignments.map((item) => item.id === assignmentId ? { ...item, [field]: value } : item) }))
+  }
 
   useEffect(() => {
     const atualizarMinimo = () => setDataAtualFormatadaISO(getMinimumSaoPauloDateTime())
@@ -341,7 +365,7 @@ function DashboardProfessor() {
     </section>
   }
 
-  return <><RoleDashboard role="TEACHER" title="Área do Professor" eyebrow="SEU ESPAÇO DE ENSINO" subtitle="Acompanhe suas turmas e organize sua rotina docente." navigation={navigation} renderContent={renderContent} onTabChange={(tab) => { if (tab === 'relatorios') carregarRelatorios() }} />{selectedStudent && <div className="student-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedStudent(null) }}><section className="student-performance-panel" role="dialog" aria-modal="true" aria-labelledby="student-performance-title"><button className="student-modal-close" type="button" aria-label="Fechar" onClick={() => setSelectedStudent(null)}>×</button><span className="role-kicker">DESEMPENHO DO ALUNO · {selectedStudent.classItem.name}</span><h2 id="student-performance-title">{selectedStudent.name}</h2><p className="student-email">{selectedStudent.email}</p>{studentLoading ? <p>Carregando histórico…</p> : studentError ? <p role="alert">{studentError}</p> : studentPerformance && <><div className="student-summary"><strong>{studentPerformance.completed_count}/{studentPerformance.assignment_count}</strong><span>Atividades concluídas</span></div><h3>Histórico de atividades</h3><div className="student-assignment-list">{studentPerformance.assignments.length ? studentPerformance.assignments.map((assignment) => { const status = assignment.status === 'SUBMITTED' ? 'completed' : assignment.overdue ? 'overdue' : 'pending'; return <article className="student-assignment" key={assignment.id}><div><strong>{assignment.title}</strong><small>{assignment.due_date ? `Prazo: ${formatarDataAluno(assignment.due_date)}` : 'Sem prazo definido'}</small>{assignment.submitted_at && <small>Entregue em {formatarDataAluno(assignment.submitted_at)}</small>}</div><span className={`student-status ${status}`}>{status === 'completed' ? 'Concluída' : status === 'overdue' ? 'Atrasada' : 'Pendente'}</span></article> }) : <p>Nenhuma atividade lançada para esta turma.</p>}</div></>}</section></div>}</>
+    return <><RoleDashboard role="TEACHER" title="Área do Professor" eyebrow="SEU ESPAÇO DE ENSINO" subtitle="Acompanhe suas turmas e organize sua rotina docente." navigation={navigation} renderContent={renderContent} onTabChange={(tab) => { if (tab === 'relatorios') carregarRelatorios() }} />{selectedStudent && <div className="student-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedStudent(null) }}><section className="student-performance-panel" role="dialog" aria-modal="true" aria-labelledby="student-performance-title"><button className="student-modal-close" type="button" aria-label="Fechar" onClick={() => setSelectedStudent(null)}>×</button><span className="role-kicker">DESEMPENHO DO ALUNO · {selectedStudent.classItem.name}</span><h2 id="student-performance-title">{selectedStudent.name}</h2><p className="student-email">{selectedStudent.email}</p>{studentLoading ? <p>Carregando histórico…</p> : studentError ? <p role="alert">{studentError}</p> : studentPerformance && <><div className="student-summary"><strong>{studentPerformance.completed_count}/{studentPerformance.assignment_count}</strong><span>Atividades concluídas</span></div><h3>Histórico de atividades</h3><div className="student-assignment-list">{studentPerformance.assignments.length ? studentPerformance.assignments.map((assignment) => { const status = assignment.status === 'SUBMITTED' ? 'completed' : assignment.overdue ? 'overdue' : 'pending'; return <article className="student-assignment" key={assignment.id}><div><strong>{assignment.title}</strong><small>{assignment.due_date ? `Prazo: ${formatarDataAluno(assignment.due_date)}` : 'Sem prazo definido'}</small>{assignment.submitted_at && <small>Entregue em {formatarDataAluno(assignment.submitted_at)}</small>}</div><span className={`student-status ${status}`}>{status === 'completed' ? 'Concluída' : status === 'overdue' ? 'Atrasada' : 'Pendente'}</span></article> }) : <p>Nenhuma atividade lançada para esta turma.</p>}</div><h3>Trabalhos enviados e avaliação</h3><div className="teacher-submission-list">{studentPerformance.assignments.filter((assignment) => assignment.status === 'SUBMITTED').length ? studentPerformance.assignments.filter((assignment) => assignment.status === 'SUBMITTED').map((assignment) => <article className="teacher-submission-card" key={`review-${assignment.id}`}><strong>{assignment.title}</strong><small>Entregue em {formatarDataAluno(assignment.submitted_at)}</small>{assignment.link_entrega && <a href={assignment.link_entrega} target="_blank" rel="noopener noreferrer">📎 Visualizar Trabalho</a>}<label>Nota (0 a 100)<input type="number" min="0" max="100" step="0.01" value={assignment.grade ?? ''} onChange={(event) => atualizarCampoAvaliacao(assignment.id, 'grade', event.target.value)} /></label><label>Feedback<textarea maxLength={3000} value={assignment.feedback || ''} onChange={(event) => atualizarCampoAvaliacao(assignment.id, 'feedback', event.target.value)} /></label><button type="button" className="role-secondary-button" onClick={() => salvarRevisao(assignment)} disabled={savingReviewId === assignment.id}>{savingReviewId === assignment.id ? 'Salvando…' : 'Salvar avaliação'}</button></article>) : <p>Nenhum trabalho enviado ainda.</p>}</div></>}</section></div>}</>
 }
 
 export default DashboardProfessor

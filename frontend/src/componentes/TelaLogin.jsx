@@ -11,11 +11,15 @@ const caminhosPorPerfil = {
   administrador: "/login/administrador",
 };
 
+// URL da API configurada de forma dinâmica (Render ou Localhost)
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const [mensagemAviso, setMensagemAviso] = useState("");
   const [validandoSessao, setValidandoSessao] = useState(() => perfilAtivo === "aluno" && Boolean(localStorage.getItem("nexo_token")));
 
   const navigate = useNavigate();
@@ -37,10 +41,16 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
     evento.preventDefault();
     setErro("");
     setCarregando(true);
+    setMensagemAviso("");
+
+    // Temporizador para avisar o usuário caso o servidor no Render esteja "acordando"
+    const timerColdStart = setTimeout(() => {
+      setMensagemAviso("Conectando aos servidores do NEXO... Isso pode levar alguns segundos na primeira conexão.");
+    }, 2500);
 
     try {
-      // 1. Requisitar login para a API Node.js
-      const resposta = await fetch("http://localhost:3000/api/users/login", {
+      // 1. Requisitar login para a API Node.js (dinâmico)
+      const resposta = await fetch(`${API_BASE_URL}/api/users/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -70,8 +80,6 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
       localStorage.setItem("nexo_user", JSON.stringify(usuario));
 
       // 4. Redirecionamento condicional inteligente
-      // Dentro de manipularSubmissao na TelaLogin.jsx:
-
       const role = String(usuario.role || "").toUpperCase();
       const destinosPorPerfil = {
         STUDENT: "/inicio",
@@ -88,7 +96,9 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
     } catch (err) {
       setErro(err.message);
     } finally {
+      clearTimeout(timerColdStart);
       setCarregando(false);
+      setMensagemAviso("");
     }
   }
 
@@ -120,7 +130,7 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
             ))}
           </nav>
 
-          {/* Exibição de mensagem de erro caso o login falhe */}
+          {/* Mensagem de Erro */}
           {erro && (
             <div
               style={{
@@ -134,6 +144,24 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
               }}
             >
               {erro}
+            </div>
+          )}
+
+          {/* Aviso de Cold Start do Render */}
+          {mensagemAviso && (
+            <div
+              style={{
+                color: "#c084fc",
+                backgroundColor: "rgba(124, 58, 237, 0.15)",
+                border: "1px solid rgba(168, 85, 247, 0.3)",
+                padding: "10px",
+                borderRadius: "6px",
+                marginBottom: "15px",
+                fontSize: "13px",
+                textAlign: "center",
+              }}
+            >
+              <span className="login-cold-start-spinner" aria-hidden="true" />{mensagemAviso}
             </div>
           )}
 
@@ -187,6 +215,7 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
           )}
         </section>
       </div>
+      {mensagemAviso && <div className="login-cold-start-backdrop" role="alertdialog" aria-modal="true" aria-live="assertive"><section className="login-cold-start-modal"><span className="login-cold-start-spinner" aria-hidden="true" /><strong>⏳ Conectando aos servidores do NEXO...</strong><p>Isso pode levar alguns segundos no primeiro acesso.</p></section></div>}
     </main>
   );
 }

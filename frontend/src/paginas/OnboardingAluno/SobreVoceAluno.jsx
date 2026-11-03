@@ -6,6 +6,7 @@ import '../../paginasCSS/OnboardingAluno.css'
 function SobreVoceAluno() {
   const [dataNascimento, definirDataNascimento] = useState('')
   const [ocupacaoAtual, definirOcupacaoAtual] = useState('')
+  const [erro, definirErro] = useState('')
   const navegar = useNavigate()
 
   const formularioPreenchido = dataNascimento && ocupacaoAtual
@@ -14,6 +15,21 @@ function SobreVoceAluno() {
     evento.preventDefault()
 
     if (!formularioPreenchido) return
+
+    const [ano, mes, dia] = dataNascimento.split('-').map(Number)
+    const nascimento = new Date(ano, mes - 1, dia)
+    const hoje = new Date()
+    let idade = hoje.getFullYear() - ano
+    if (hoje.getMonth() < mes - 1 || (hoje.getMonth() === mes - 1 && hoje.getDate() < dia)) idade -= 1
+    const dataValida = /^\d{4}-\d{2}-\d{2}$/.test(dataNascimento)
+      && nascimento.getFullYear() === ano
+      && nascimento.getMonth() === mes - 1
+      && nascimento.getDate() === dia
+    if (!dataValida || idade < 6 || idade > 120) {
+      definirErro('Por favor, insira uma data de nascimento válida (idade entre 6 e 120 anos).')
+      return
+    }
+    definirErro('')
 
     // Salva os dados no localStorage para uso posterior no diagnóstico
     localStorage.setItem('nexo_onboarding_perfil', JSON.stringify({
@@ -61,10 +77,12 @@ function SobreVoceAluno() {
               <input
                 id="data-nascimento"
                 type="date"
+                max={new Date().toISOString().split('T')[0]}
                 value={dataNascimento}
-                onChange={(e) => definirDataNascimento(e.target.value)}
+                onChange={(e) => { definirDataNascimento(e.target.value); definirErro('') }}
                 required
               />
+              {erro && <p role="alert" style={{ color: '#f07a7a' }}>{erro}</p>}
             </div>
 
             <div className="grupo-campo-onboarding">
