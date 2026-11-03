@@ -18,11 +18,17 @@ const diagnosticFormsRoutes = require('./routes/diagnosticFormsRoutes');
 
 // 2. Inicialização do App
 const app = express();
+const rawFrontendUrl = process.env.FRONTEND_URL || 'https://nexo-educacao.vercel.app';
+const cleanFrontendUrl = rawFrontendUrl
+  .replace(/^['"\[]+|['"\]]+$/g, '')
+  .split('](')[0]
+  .replace(/\[/g, '')
+  .replace(/\/+$/, '');
 
 // 3. Middlewares Globais
 app.use(cors({
   origin: [
-    'https://nexo-educacao.vercel.app',
+    cleanFrontendUrl,
     'http://localhost:5173',
     'http://localhost:3000'
   ],
@@ -57,7 +63,7 @@ app.get('/', (req, res) => {
         <h2>🎓 NEXO — API</h2>
         <div class="status"><div class="pulse"></div> Servidor Online & Operacional</div>
         <p>O backend do NEXO está ativo e pronto para autenticação e requisições do aplicativo.</p>
-        <a href="${process.env.FRONTEND_URL || 'https://nexo-educacao.vercel.app'}">Acessar Plataforma</a>
+        <a href="${cleanFrontendUrl}">Acessar Plataforma</a>
       </div>
     </body>
     </html>
