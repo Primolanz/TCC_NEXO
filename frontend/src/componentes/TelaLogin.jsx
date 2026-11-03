@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import CampoSenha from "./CampoSenha.jsx";
 import CabecalhoPagina from "./CabecalhoPagina.jsx";
-import { apiClient, saveSession } from "../servicos/apiClient.js";
+import { apiClient, cleanedUrl, saveSession } from "../servicos/apiClient.js";
 import "../paginasCSS/Login.css";
 
 const caminhosPorPerfil = {
@@ -12,12 +12,6 @@ const caminhosPorPerfil = {
 };
 
 // URL da API configurada de forma dinâmica (Render ou Localhost)
-const rawUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
-const cleanedUrl = `https://${rawUrl
-  .replace(/^["'\[]+|["'\]]+$/g, "")
-  .replace(/^https?:\/\//i, "")
-  .replace(/\/+$/, "")}`;
-
 function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
