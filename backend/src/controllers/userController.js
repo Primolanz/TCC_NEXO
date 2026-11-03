@@ -153,6 +153,8 @@ exports.loginUser = async (req, res) => {
   }
 };
 
+exports.login = exports.loginUser;
+
 exports.getMyProfile = async (req, res) => {
   try {
     const [{ data: user, error: userError }, { data: diagnostic, error: diagnosticError }] = await Promise.all([
