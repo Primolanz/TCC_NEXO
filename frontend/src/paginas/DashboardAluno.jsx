@@ -197,6 +197,7 @@ function DashboardAluno() {
   const [erroConclusao, setErroConclusao] = useState('')
   const [arquivoEntrega, setArquivoEntrega] = useState(null)
   const [linkEntrega, setLinkEntrega] = useState('')
+  const [respostaTexto, setRespostaTexto] = useState('')
   const [codigoTurma, setCodigoTurma] = useState('')
   const [estadoTurmas, setEstadoTurmas] = useState({ loading: true, submitting: false, message: '', error: '' })
   const [erro, setErro] = useState('')
@@ -251,8 +252,8 @@ function DashboardAluno() {
 
   async function marcarComoConcluida() {
     if (!atividadeSelecionada || atividadeSelecionada.status === 'SUBMITTED') return
-    if (!arquivoEntrega && !isAllowedSubmissionLink(linkEntrega)) { setErroConclusao(INVALID_SUBMISSION_LINK); return }
-    if (!arquivoEntrega) {
+    if (!arquivoEntrega && !isAllowedSubmissionLink(linkEntrega) && !respostaTexto.trim()) { setErroConclusao('Escreva uma resposta, envie um link válido ou anexe um arquivo.'); return }
+    if (!arquivoEntrega && linkEntrega.trim()) {
     try {
       const url = new URL(linkEntrega.trim())
       if (!['http:', 'https:'].includes(url.protocol)) throw new Error()
@@ -264,7 +265,10 @@ function DashboardAluno() {
     setEnviandoConclusao(true)
     setErroConclusao('')
     try {
-      let submissionPayload = { link_entrega: linkEntrega.trim() }
+      let submissionPayload = {
+        text_content: respostaTexto.trim(),
+        ...(linkEntrega.trim() ? { link_entrega: linkEntrega.trim() } : {}),
+      }
       if (arquivoEntrega) {
         const mimeByExtension = { pdf: 'application/pdf', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', doc: 'application/msword', png: 'image/png', jpg: 'image/jpeg' }
         const extension = arquivoEntrega.name.toLowerCase().split('.').pop()
@@ -275,7 +279,7 @@ function DashboardAluno() {
         if (!ticketResponse.ok) throw new Error(ticket.error || 'Não foi possível preparar o upload.')
         const uploadResponse = await fetch(ticket.signedUrl, { method: 'PUT', headers: { 'Content-Type': contentType }, body: arquivoEntrega })
         if (!uploadResponse.ok) throw new Error('Não foi possível enviar o arquivo. Tente novamente.')
-        submissionPayload = { storage_path: ticket.path }
+        submissionPayload = { text_content: respostaTexto.trim(), storage_path: ticket.path }
       }
       const response = await apiClient(`/assignments/${atividadeSelecionada.id}/submit`, {
         method: 'POST',
@@ -585,7 +589,7 @@ function DashboardAluno() {
             <div className="dashboard-titulo-secao"><h1 id="aluno-atividades-titulo">Tarefas e atividades</h1><span>Atividades compartilhadas pelos professores das suas turmas.</span></div>
             {erroAtividades && <p className="aluno-turmas-feedback erro" role="alert">{erroAtividades}</p>}
             {carregandoAtividades ? <p className="aluno-turmas-vazio">Carregando atividades…</p> : atividades.length ? <div className="aluno-atividades-lista">
-              {atividades.map((atividade) => <article className="aluno-atividade-card" key={atividade.id} role="button" tabIndex={0} aria-haspopup="dialog" onClick={() => { setErroConclusao(''); setLinkEntrega(''); setArquivoEntrega(null); setAtividadeSelecionada(atividade) }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setErroConclusao(''); setLinkEntrega(''); setArquivoEntrega(null); setAtividadeSelecionada(atividade) } }}>
+              {atividades.map((atividade) => <article className="aluno-atividade-card" key={atividade.id} role="button" tabIndex={0} aria-haspopup="dialog" onClick={() => { setErroConclusao(''); setLinkEntrega(''); setRespostaTexto(''); setArquivoEntrega(null); setAtividadeSelecionada(atividade) }} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setErroConclusao(''); setLinkEntrega(''); setRespostaTexto(''); setArquivoEntrega(null); setAtividadeSelecionada(atividade) } }}>
                 <header><div><span className="aluno-turmas-kicker">{atividade.class_name}</span><h2>{atividade.title}</h2></div><span className={`aluno-atividade-status ${atividade.status === 'SUBMITTED' ? 'concluida' : ''}`}>{atividade.status === 'SUBMITTED' ? 'Entregue' : 'Pendente'}</span></header>
                 <p className="aluno-atividade-descricao">{atividade.description || 'Sem instruções adicionais.'}</p>
                 <footer><span>Data e hora limite</span><strong>{formatarDataHoraEntrega(atividade.due_date)}</strong></footer>
@@ -598,8 +602,8 @@ function DashboardAluno() {
                 <h2 id="atividade-modal-titulo">{atividadeSelecionada.title}</h2>
                 <div className="aluno-atividade-modal-prazo"><span>Data e hora limite</span><strong>{formatarDataHoraEntrega(atividadeSelecionada.due_date)}</strong></div>
                 <div className="aluno-atividade-modal-conteudo"><h3>Instruções e conteúdo</h3><p>{atividadeSelecionada.description || 'O professor não adicionou instruções para esta atividade.'}</p></div>
-                {atividadeSelecionada.status !== 'SUBMITTED' && <><label className="aluno-link-entrega">Cole aqui o link do seu trabalho ou arquivo (ex: Google Drive, GitHub, Figma, Docs, Canva, PDF)<input type="url" value={linkEntrega} onChange={(event) => { setLinkEntrega(event.target.value); setArquivoEntrega(null) }} placeholder="https://..." disabled={Boolean(arquivoEntrega)} required={!arquivoEntrega} /></label><label className="aluno-link-entrega">Ou anexe um arquivo do seu computador<input type="file" accept=".pdf,.docx,.doc,.png,.jpg" onChange={(event) => { setArquivoEntrega(event.target.files?.[0] || null); if (event.target.files?.[0]) setLinkEntrega('') }} /></label>{arquivoEntrega && <small className="aluno-arquivo-selecionado">Arquivo: {arquivoEntrega.name}</small>}</>}
-                {atividadeSelecionada.status === 'SUBMITTED' && <div className="aluno-entrega-link-status">{atividadeSelecionada.link_entrega && <a href={atividadeSelecionada.link_entrega} target="_blank" rel="noopener noreferrer">📎 Visualizar link enviado</a>}{atividadeSelecionada.grade !== null && atividadeSelecionada.grade !== undefined && <p>Nota: {atividadeSelecionada.grade}/100{atividadeSelecionada.feedback ? ` · ${atividadeSelecionada.feedback}` : ''}</p>}</div>}
+                {atividadeSelecionada.status !== 'SUBMITTED' && <><label className="aluno-link-entrega">Resposta em texto<textarea maxLength={10000} rows={5} value={respostaTexto} onChange={(event) => setRespostaTexto(event.target.value)} placeholder="Escreva sua resposta (opcional se enviar link ou arquivo)." /></label><label className="aluno-link-entrega">Link do trabalho (Google Drive, GitHub, Figma, Docs, Canva ou PDF)<input type="url" value={linkEntrega} onChange={(event) => { setLinkEntrega(event.target.value); setArquivoEntrega(null) }} placeholder="https://..." /></label><label className="aluno-link-entrega">Ou anexe um arquivo do seu computador<input type="file" accept=".pdf,.docx,.doc,.png,.jpg" onChange={(event) => { setArquivoEntrega(event.target.files?.[0] || null); if (event.target.files?.[0]) setLinkEntrega('') }} /></label>{arquivoEntrega && <small className="aluno-arquivo-selecionado">Arquivo: {arquivoEntrega.name}</small>}</>}
+                {atividadeSelecionada.status === 'SUBMITTED' && <div className="aluno-entrega-link-status">{atividadeSelecionada.text_content && <p>{atividadeSelecionada.text_content}</p>}{atividadeSelecionada.link_entrega && <a href={atividadeSelecionada.link_entrega} target="_blank" rel="noopener noreferrer">📎 Visualizar link enviado</a>}{atividadeSelecionada.grade !== null && atividadeSelecionada.grade !== undefined && <p>Nota: {atividadeSelecionada.grade}/100{atividadeSelecionada.feedback ? ` · ${atividadeSelecionada.feedback}` : ''}</p>}</div>}
                 {erroConclusao && <p className="aluno-turmas-feedback erro" role="alert">{erroConclusao}</p>}
                 {atividadeSelecionada.status === 'SUBMITTED'
                   ? <p className="aluno-atividade-concluida-mensagem" role="status">Atividade entregue.</p>

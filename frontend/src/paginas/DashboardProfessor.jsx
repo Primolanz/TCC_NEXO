@@ -1,23 +1,21 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { BookOpen, ClipboardList, FilePlus, LayoutDashboard, UsersRound, X } from 'lucide-react'
 import RoleDashboard from '../componentes/RoleDashboard.jsx'
 import { apiClient } from '../servicos/apiClient.js'
 
 const navigation = [
+  { id: 'entregas', title: 'Entregas', icon: <ClipboardList /> },
   { id: 'inicio', title: 'Início', icon: <LayoutDashboard /> },
   { id: 'turmas', title: 'Minhas Turmas', icon: <UsersRound /> },
   { id: 'atividade', title: 'Lançar Atividade', icon: <FilePlus /> },
   { id: 'relatorios', title: 'Relatórios', icon: <BookOpen /> },
 ]
 
-const meses = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-]
-const horarios = [
-  ...Array.from({ length: 48 }, (_, index) => `${String(Math.floor(index / 2)).padStart(2, '0')}:${index % 2 ? '30' : '00'}`),
-  '23:59',
-]
+async function readJsonResponse(response) {
+  const text = await response.text()
+  if (!text) return {}
+  try { return JSON.parse(text) } catch { return {} }
+}
 
 function dateTimePartsInSaoPaulo(date) {
   return Object.fromEntries(new Intl.DateTimeFormat('en-GB', {
@@ -60,8 +58,8 @@ function formatDatePtBr(value) {
 
 function DashboardProfessor() {
   const [dataAtualFormatadaISO, setDataAtualFormatadaISO] = useState(getMinimumSaoPauloDateTime)
-  const [dataEntrega, setDataEntrega] = useState({ dia: '', mes: '', ano: '' })
-  const [horarioEntrega, setHorarioEntrega] = useState('')
+  const [dataPrazo, setDataPrazo] = useState('')
+  const [horaPrazo, setHoraPrazo] = useState('')
   const [classes, setClasses] = useState([])
   const [activities, setActivities] = useState([])
   const [creatingActivity, setCreatingActivity] = useState(false)
@@ -83,15 +81,18 @@ function DashboardProfessor() {
   const [reportsLoading, setReportsLoading] = useState(false)
   const [reportsError, setReportsError] = useState('')
   const [selectedReportClass, setSelectedReportClass] = useState(null)
-  const dataHojeISO = dataAtualFormatadaISO.slice(0, 10)
-  const anoAtual = Number(dataHojeISO.slice(0, 4))
-  const diasNoMes = dataEntrega.mes && dataEntrega.ano
-    ? new Date(Number(dataEntrega.ano), Number(dataEntrega.mes), 0).getDate()
-    : 31
-  const dataEntregaISO = dataEntrega.dia && dataEntrega.mes && dataEntrega.ano
-    ? `${dataEntrega.ano}-${dataEntrega.mes}-${dataEntrega.dia}`
-    : ''
-
+  const [selectedAssignmentForSubmissions, setSelectedAssignmentForSubmissions] = useState(null)
+  const [assignmentSubmissions, setAssignmentSubmissions] = useState([])
+  const [submissionsLoading, setSubmissionsLoading] = useState(false)
+  const [submissionsError, setSubmissionsError] = useState('')
+  const [entregasClassId, setEntregasClassId] = useState('')
+  const [entregasAssignmentId, setEntregasAssignmentId] = useState('')
+  const [entregasAlunos, setEntregasAlunos] = useState([])
+  const [entregasLoading, setEntregasLoading] = useState(false)
+  const [entregasError, setEntregasError] = useState('')
+  const [entregasRosterLoaded, setEntregasRosterLoaded] = useState(false)
+  const [entregasSemEnvios, setEntregasSemEnvios] = useState(false)
+  const entregasRequestId = useRef(0)
   async function salvarRevisao(assignment) {
     setSavingReviewId(assignment.id)
     setStudentError('')
@@ -139,6 +140,19 @@ function DashboardProfessor() {
 
   useEffect(() => { carregarTurmas().catch(() => {}) }, [carregarTurmas])
 
+  const carregarAtividades = useCallback(async () => {
+    try {
+      const response = await apiClient('/assignments/teacher')
+      const body = await readJsonResponse(response)
+      if (!response.ok) throw new Error(body.error || 'Não foi possível carregar as atividades.')
+      setActivities(Array.isArray(body.assignments) ? body.assignments : [])
+    } catch (error) {
+      setActivityError(error.message)
+    }
+  }, [])
+
+  useEffect(() => { carregarAtividades() }, [carregarAtividades])
+
   async function carregarRelatorios() {
     setReportsLoading(true)
     setReportsError('')
@@ -154,6 +168,83 @@ function DashboardProfessor() {
       setReportsLoading(false)
     }
   }
+
+  async function verEntregas(assignment) {
+    setSelectedAssignmentForSubmissions(assignment)
+    setAssignmentSubmissions([])
+    setSubmissionsError('')
+    setSubmissionsLoading(true)
+    try {
+      const response = await apiClient(`/submissions/assignment/${encodeURIComponent(assignment.id)}`)
+      if (response.status === 404) {
+        setAssignmentSubmissions([])
+        return
+      }
+      const body = await readJsonResponse(response)
+      if (!response.ok) throw new Error(body.error || 'Não foi possível carregar as entregas.')
+      setAssignmentSubmissions(Array.isArray(body) ? body : Array.isArray(body.submissions) ? body.submissions : [])
+    } catch (error) {
+      console.error('Erro ao buscar entregas:', error)
+      setSubmissionsError(error.message)
+    } finally {
+      setSubmissionsLoading(false)
+    }
+  }
+
+  const carregarEntregasDaTurma = useCallback(async (classId, assignmentId) => {
+    if (!classId || !assignmentId) {
+      entregasRequestId.current += 1
+      setEntregasAlunos([])
+      return
+    }
+    const requestId = ++entregasRequestId.current
+    setEntregasLoading(true)
+    setEntregasError('')
+    setEntregasRosterLoaded(false)
+    setEntregasSemEnvios(false)
+    try {
+      const studentsResponse = await apiClient(`/teacher/classes/${encodeURIComponent(classId)}/students`)
+      const studentsBody = await readJsonResponse(studentsResponse)
+      if (!studentsResponse.ok) throw new Error(studentsBody.error || 'Falha ao carregar alunos da turma.')
+      const students = Array.isArray(studentsBody.students) ? studentsBody.students : []
+      if (requestId !== entregasRequestId.current) return
+      setEntregasRosterLoaded(true)
+      setEntregasAlunos(students.map((student) => ({ student, submission: null })))
+      if (!students.length) return
+
+      const submissionsResponse = await apiClient(`/submissions/assignment/${encodeURIComponent(assignmentId)}`)
+      if (submissionsResponse.status === 404) {
+        setEntregasSemEnvios(true)
+        return
+      }
+      const submissionsBody = await readJsonResponse(submissionsResponse)
+      if (!submissionsResponse.ok) throw new Error(submissionsBody.error || 'Falha ao carregar entregas.')
+      const submissions = Array.isArray(submissionsBody) ? submissionsBody : Array.isArray(submissionsBody.submissions) ? submissionsBody.submissions : []
+      if (requestId !== entregasRequestId.current) return
+      setEntregasSemEnvios(submissions.length === 0)
+      const byStudentId = new Map(submissions.map((submission) => [submission.student_id, submission]))
+      setEntregasAlunos(students.map((student) => ({ student, submission: byStudentId.get(student.id) || null })))
+    } catch (error) {
+      if (requestId !== entregasRequestId.current) return
+      console.error('Erro ao buscar entregas:', error)
+      setEntregasError(error.message)
+    } finally {
+      if (requestId === entregasRequestId.current) setEntregasLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!entregasClassId || !entregasAssignmentId) {
+      entregasRequestId.current += 1
+      setEntregasAlunos([])
+      setEntregasError('')
+      setEntregasLoading(false)
+      setEntregasRosterLoaded(false)
+      setEntregasSemEnvios(false)
+      return
+    }
+    carregarEntregasDaTurma(entregasClassId, entregasAssignmentId)
+  }, [entregasClassId, entregasAssignmentId, carregarEntregasDaTurma])
 
   async function criarTurma(event) {
     event.preventDefault()
@@ -234,7 +325,7 @@ function DashboardProfessor() {
     const form = new FormData(formElement)
     setActivityError('')
     setActivitySuccess('')
-    if (!dataEntregaISO || !horarioEntrega) {
+    if (!dataPrazo || !horaPrazo || `${dataPrazo}T${horaPrazo}` < dataAtualFormatadaISO) {
       setActivityError('Selecione a data e o horário limite da atividade.')
       return
     }
@@ -248,7 +339,7 @@ function DashboardProfessor() {
           title: String(form.get('titulo') || '').trim(),
           description: String(form.get('descricao') || '').trim(),
           class_id: String(form.get('turma') || ''),
-          due_date: dateTimeLocalToIsoSaoPaulo(`${dataEntregaISO}T${horarioEntrega}`),
+          due_date: dateTimeLocalToIsoSaoPaulo(`${dataPrazo}T${horaPrazo}`),
         }),
       })
       const body = await response.json()
@@ -256,8 +347,8 @@ function DashboardProfessor() {
       setActivities((current) => [body.assignment, ...current])
       setActivitySuccess('Atividade lançada com sucesso. Ela já está disponível para os alunos da turma.')
       formElement.reset()
-      setDataEntrega({ dia: '', mes: '', ano: '' })
-      setHorarioEntrega('')
+      setDataPrazo('')
+      setHoraPrazo('')
     } catch (error) {
       setActivityError(error.message)
     } finally {
@@ -293,6 +384,20 @@ function DashboardProfessor() {
       </>
     }
 
+    if (activeTab === 'entregas') {
+      const classAssignments = activities.filter((item) => item.class_id === entregasClassId)
+      return <section className="role-tab-panel" aria-labelledby="entregas-titulo">
+        <header className="role-panel-heading"><div><span className="role-kicker">ACOMPANHAMENTO</span><h2 id="entregas-titulo">Entregas dos Alunos</h2><p>Consulte respostas, links e arquivos enviados por turma e atividade.</p></div></header>
+        <div className="role-form-grid submissions-filters">
+          <label>Turma<select value={entregasClassId} onChange={(event) => { setEntregasClassId(event.target.value); setEntregasAssignmentId(''); setEntregasAlunos([]); setEntregasError('') }}><option value="">Selecione uma turma</option>{classes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+          <label>Atividade<select value={entregasAssignmentId} disabled={!entregasClassId} onChange={(event) => setEntregasAssignmentId(event.target.value)}><option value="">Selecione uma atividade</option>{classAssignments.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
+        </div>
+        {entregasError && <p className="role-notice" role="alert">{entregasError}</p>}
+        {entregasSemEnvios && entregasRosterLoaded && entregasAlunos.length > 0 && <p className="report-detail-empty">Nenhuma entrega cadastrada para esta atividade.</p>}
+        {entregasLoading ? <p className="report-detail-empty">Carregando alunos e entregas...</p> : entregasAssignmentId ? !entregasRosterLoaded ? null : entregasAlunos.length ? <div className="teacher-submission-list teacher-class-submissions">{entregasAlunos.map(({ student, submission }) => <article className={`teacher-submission-card ${submission ? '' : 'submission-pending'}`} key={student.id}><strong>{student.name}</strong><small>{student.email}</small><span className={`role-badge ${submission ? 'submission-received' : 'submission-missing'}`}>{submission ? 'Entregue' : 'Não entregue'}</span>{submission ? <><small>Entregue em {formatarDataAluno(submission.submitted_at)}</small>{submission.text_content && <p className="assignment-submission-text">{submission.text_content}</p>}{submission.external_link && <a href={submission.external_link} target="_blank" rel="noopener noreferrer">Abrir link enviado</a>}{submission.file_url && <a href={submission.file_url} target="_blank" rel="noopener noreferrer">Abrir ou baixar arquivo</a>}</> : <small>Esta atividade ainda não foi enviada por este aluno.</small>}</article>)}</div> : <p className="report-detail-empty">Nenhum aluno matriculado nesta turma.</p> : <p className="report-detail-empty">Selecione uma turma e uma atividade para consultar as entregas.</p>}
+      </section>
+    }
+
     if (activeTab === 'turmas') return <section className="role-tab-panel" aria-labelledby="turmas-titulo">
       <header className="role-panel-heading">
         <div><span className="role-kicker">ORGANIZAÇÃO</span><h2 id="turmas-titulo">Minhas Turmas</h2><p>Crie e acompanhe suas turmas em um só lugar.</p></div>
@@ -326,27 +431,11 @@ function DashboardProfessor() {
             <label>Turma<select name="turma" defaultValue="" required><option value="" disabled>Selecione uma turma</option>{classes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
             <label>Título da atividade<input name="titulo" placeholder="Ex.: Revisão de frações" maxLength="180" required /></label>
             <label className="role-form-wide">Instruções / Conteúdo<textarea name="descricao" placeholder="Descreva o que os alunos devem fazer." rows="4" /></label>
-            <label>Data de entrega <small>(DD/MM/AAAA)</small><span className="role-date-selects">
-              <select aria-label="Dia de entrega" value={dataEntrega.dia} onChange={(event) => setDataEntrega((current) => ({ ...current, dia: event.target.value }))} required>
-                <option value="">DD</option>{Array.from({ length: 31 }, (_, index) => String(index + 1).padStart(2, '0')).map((dia) => {
-                  const candidata = `${dataEntrega.ano}-${dataEntrega.mes}-${dia}`
-                  const disabled = !dataEntrega.mes || !dataEntrega.ano || Number(dia) > diasNoMes || candidata < dataHojeISO
-                  return <option key={dia} value={dia} disabled={disabled}>{dia}</option>
-                })}
-              </select>
-              <select aria-label="Mês de entrega" value={dataEntrega.mes} onChange={(event) => setDataEntrega((current) => ({ ...current, mes: event.target.value, dia: '' }))} required>
-                <option value="">MM</option>{meses.map((mes, index) => <option key={mes} value={String(index + 1).padStart(2, '0')}>{mes}</option>)}
-              </select>
-              <select aria-label="Ano de entrega" value={dataEntrega.ano} onChange={(event) => setDataEntrega((current) => ({ ...current, ano: event.target.value, dia: '' }))} required>
-                <option value="">AAAA</option>{Array.from({ length: 11 }, (_, index) => anoAtual + index).map((ano) => <option key={ano} value={String(ano)}>{ano}</option>)}
-              </select>
-            </span></label>
-            <label>Horário limite (24h)<select aria-label="Horário limite no formato 24 horas" value={horarioEntrega} onChange={(event) => setHorarioEntrega(event.target.value)} required>
-              <option value="">Selecione o horário</option>{horarios.map((horario) => <option key={horario} value={horario} disabled={dataEntregaISO === dataHojeISO && horario < dataAtualFormatadaISO.slice(11, 16)}>{horario}</option>)}
-            </select></label>
+            <div className="role-date-time-fields"><label>Data de entrega<input type="date" name="dataPrazo" value={dataPrazo} min={dataAtualFormatadaISO.slice(0, 10)} onChange={(event) => setDataPrazo(event.target.value)} required /></label><label>Horário de entrega<input type="time" name="horaPrazo" value={horaPrazo} min={dataPrazo === dataAtualFormatadaISO.slice(0, 10) ? dataAtualFormatadaISO.slice(11, 16) : '00:00'} onChange={(event) => setHoraPrazo(event.target.value)} required /></label></div>
           </div><button className="role-primary-button" type="submit" disabled={creatingActivity}>{creatingActivity ? 'Publicando…' : '＋ Publicar atividade'}</button>
         </form> : <div className="role-empty-state"><span className="role-empty-icon">＋</span><strong>Crie uma turma para começar</strong><p>As atividades são vinculadas a uma turma. Cadastre uma turma antes de lançar tarefas.</p><button className="role-secondary-button" type="button" onClick={() => goToTab('turmas')}>Ir para Minhas Turmas</button></div>}
-        {activities.length > 0 && <div className="role-list role-activities-list"><div className="role-list-heading"><h3>Atividades lançadas</h3><span>{activities.length} no total</span></div>{activities.map((item) => <article className="role-list-item" key={item.id}><span className="role-card-icon role-icon-teal" aria-hidden="true">✎</span><div><strong>{item.title}</strong><small>{item.class_name}{item.due_date ? ` · Entrega: ${formatDatePtBr(item.due_date)}` : ' · Sem data de entrega'}</small></div><span className="role-badge">Publicada</span></article>)}</div>}
+        {activities.length > 0 && <div className="role-list role-activities-list"><div className="role-list-heading"><h3>Atividades lançadas</h3><span>{activities.length} no total</span></div>{activities.map((item) => <article className="role-list-item" key={item.id}><span className="role-card-icon role-icon-teal" aria-hidden="true">✎</span><div><strong>{item.title}</strong><small>{item.class_name}{item.due_date ? ` · Entrega: ${formatDatePtBr(item.due_date)}` : ' · Sem data de entrega'}</small></div><span className="role-badge">Publicada</span><button className="role-secondary-button" type="button" onClick={() => verEntregas(item)}>Ver Entregas</button></article>)}</div>}
+        {selectedAssignmentForSubmissions && <div className="student-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedAssignmentForSubmissions(null) }}><section className="student-performance-panel" role="dialog" aria-modal="true" aria-labelledby="assignment-submissions-title"><button className="student-modal-close" type="button" aria-label="Fechar entregas" onClick={() => setSelectedAssignmentForSubmissions(null)}>×</button><span className="role-kicker">ENTREGAS DA ATIVIDADE</span><h2 id="assignment-submissions-title">{selectedAssignmentForSubmissions.title}</h2>{submissionsLoading ? <p>Carregando entregas...</p> : submissionsError ? <p role="alert">{submissionsError}</p> : assignmentSubmissions.length ? <div className="teacher-submission-list">{assignmentSubmissions.map((submission) => <article className="teacher-submission-card" key={`${submission.assignment_id}-${submission.student_id}`}><strong>{submission.student?.name || 'Aluno'}</strong>{submission.student?.email && <small>{submission.student.email}</small>}<small>Entregue em {formatarDataAluno(submission.submitted_at)}</small>{submission.text_content && <p className="assignment-submission-text">{submission.text_content}</p>}{submission.external_link && <a href={submission.external_link} target="_blank" rel="noopener noreferrer">Abrir link enviado</a>}{submission.file_url && <a href={submission.file_url} target="_blank" rel="noopener noreferrer">Abrir ou baixar arquivo</a>}</article>)}</div> : <p>Nenhuma entrega cadastrada para esta atividade.</p>}</section></div>}
       </section>
     }
 

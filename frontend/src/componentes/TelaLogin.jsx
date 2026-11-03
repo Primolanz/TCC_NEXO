@@ -53,7 +53,7 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, role: perfilAtivo }),
       });
 
       const textoResposta = await resposta.text();

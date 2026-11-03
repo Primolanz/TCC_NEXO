@@ -1,4 +1,4 @@
-const rawUrl = import.meta.env.VITE_API_URL || 'https://nexo-backend.onrender.com'
+const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 export const cleanedUrl = rawUrl.replace(/^["'\[]+|["'\]\)]+$/g, '').replace(/\/+$/, '')
 const API_BASE_URL = `${cleanedUrl}/api`
 

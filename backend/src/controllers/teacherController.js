@@ -175,7 +175,7 @@ exports.getStudentPerformance = async (req, res) => {
     if (!student) return res.status(404).json({ error: 'Aluno não encontrado.' });
     const assignmentIds = (assignments || []).map((item) => item.id);
     const { data: submissions, error: submissionsError } = assignmentIds.length
-      ? await supabase.from('assignment_submissions').select('assignment_id, status, submitted_at, link_entrega, grade, feedback').eq('student_id', student.id).in('assignment_id', assignmentIds)
+      ? await supabase.from('assignment_submissions').select('assignment_id, status, submitted_at, link_entrega, text_content, grade, feedback').eq('student_id', student.id).in('assignment_id', assignmentIds)
       : { data: [], error: null };
     if (submissionsError) throw submissionsError;
     const byAssignment = new Map((submissions || []).map((item) => [item.assignment_id, item]));
@@ -189,12 +189,80 @@ exports.getStudentPerformance = async (req, res) => {
         if (signedError) throw signedError;
         submissionLink = signedLink.signedUrl;
       }
-      return { ...item, status: submitted ? 'SUBMITTED' : 'PENDING', submitted_at: submitted ? (submission.submitted_at || null) : null, link_entrega: submissionLink, grade: submitted ? submission.grade : null, feedback: submitted ? submission.feedback : null, overdue: !submitted && Boolean(item.due_date) && Date.parse(item.due_date) < now };
+      return { ...item, status: submitted ? 'SUBMITTED' : 'PENDING', submitted_at: submitted ? (submission.submitted_at || null) : null, link_entrega: submissionLink, text_content: submitted ? submission.text_content || null : null, grade: submitted ? submission.grade : null, feedback: submitted ? submission.feedback : null, overdue: !submitted && Boolean(item.due_date) && Date.parse(item.due_date) < now };
     }));
     return res.json({ student, class: classItem, completed_count: performance.filter((item) => item.status === 'SUBMITTED').length, assignment_count: performance.length, assignments: performance });
   } catch (error) {
     console.error('[Professor] Falha ao consultar desempenho:', error.message);
     return res.status(500).json({ error: 'Não foi possível carregar o desempenho do aluno.' });
+  }
+};
+
+exports.getAssignmentSubmissions = async (req, res) => {
+  try {
+    if (!await ensureTeacher(req.user.id)) {
+      return res.status(403).json({ error: 'Apenas professores aprovados podem consultar entregas.' });
+    }
+
+    const { data: assignment, error: assignmentError } = await supabase
+      .from('assignments')
+      .select('id, class_id')
+      .eq('id', req.params.assignmentId)
+      .maybeSingle();
+    if (assignmentError) throw assignmentError;
+    if (!assignment) return res.status(404).json({ error: 'Atividade não encontrada.' });
+
+    const classItem = await getOwnedClass(assignment.class_id, req.user.id);
+    if (!classItem) return res.status(403).json({ error: 'Esta atividade não pertence às suas turmas.' });
+
+    const { data: submissions, error: submissionsError } = await supabase
+      .from('assignment_submissions')
+      .select('assignment_id, student_id, status, submitted_at, link_entrega, text_content')
+      .eq('assignment_id', assignment.id)
+      .eq('status', 'SUBMITTED')
+      .order('submitted_at', { ascending: false });
+    if (submissionsError) throw submissionsError;
+
+    const studentIds = [...new Set((submissions || []).map((item) => item.student_id))];
+    const { data: students, error: studentsError } = studentIds.length
+      ? await supabase.from('users').select('id, name, email').in('id', studentIds)
+      : { data: [], error: null };
+    if (studentsError) throw studentsError;
+    const studentsById = new Map((students || []).map((student) => [student.id, student]));
+
+    const submissionDetails = await Promise.all((submissions || []).map(async (submission) => {
+      const link = String(submission.link_entrega || '');
+      const isStorageFile = link.startsWith('storage://');
+      let fileUrl = null;
+      let externalLink = null;
+      if (isStorageFile) {
+        const storagePath = link.slice('storage://'.length);
+        const { data: signedUrl, error: signedError } = await supabase
+          .storage.from('assignment-submissions').createSignedUrl(storagePath, 3600);
+        if (signedError) throw signedError;
+        fileUrl = signedUrl.signedUrl;
+      } else if (link) {
+        try {
+          const parsedLink = new URL(link);
+          if (parsedLink.protocol === 'https:') externalLink = parsedLink.toString();
+        } catch {
+          externalLink = null;
+        }
+      }
+
+      return {
+        ...submission,
+        student: studentsById.get(submission.student_id) || { id: submission.student_id, name: 'Aluno', email: '' },
+        text_content: submission.text_content || null,
+        external_link: externalLink,
+        file_url: fileUrl,
+      };
+    }));
+
+    return res.json({ submissions: submissionDetails });
+  } catch (error) {
+    console.error('[Professor] Falha ao carregar entregas da atividade:', error.message);
+    return res.status(500).json({ error: 'Não foi possível carregar as entregas desta atividade.' });
   }
 };
 

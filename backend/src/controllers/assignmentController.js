@@ -171,7 +171,7 @@ exports.listStudentAssignments = async (req, res) => {
     const { data: submissions, error: submissionsError } = assignmentIds.length
       ? await supabase
         .from('assignment_submissions')
-        .select('assignment_id, status, link_entrega, submitted_at, grade, feedback')
+        .select('assignment_id, status, link_entrega, text_content, submitted_at, grade, feedback')
         .eq('student_id', req.user.id)
         .in('assignment_id', assignmentIds)
       : { data: [], error: null };
@@ -193,14 +193,49 @@ exports.listStudentAssignments = async (req, res) => {
   }
 };
 
+exports.listTeacherAssignments = async (req, res) => {
+  try {
+    const profile = await getUserRole(req.user.id);
+    if (profile.role !== 'TEACHER' || profile.status_approval !== 'APPROVED') {
+      return res.status(403).json({ error: 'Apenas professores aprovados podem consultar as atividades.' });
+    }
+
+    const { data: classes, error: classesError } = await supabase
+      .from('classes')
+      .select('id, name')
+      .eq('teacher_id', req.user.id);
+    if (classesError) throw classesError;
+    const classNames = new Map((classes || []).map((item) => [item.id, item.name]));
+    const classIds = [...classNames.keys()];
+    if (!classIds.length) return res.json({ assignments: [] });
+
+    const { data: assignments, error } = await supabase
+      .from('assignments')
+      .select('id, title, description, class_id, due_date, created_at')
+      .in('class_id', classIds)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    return res.json({ assignments: (assignments || []).map((item) => ({ ...item, class_name: classNames.get(item.class_id) || 'Turma' })) });
+  } catch (error) {
+    console.error('[Atividades] Falha ao listar atividades do professor:', error.message);
+    return res.status(500).json({ error: 'Não foi possível carregar as atividades.' });
+  }
+};
+
 exports.submitAssignment = async (req, res) => {
   try {
     const storagePath = String(req.body?.storage_path || '').trim();
-    const submissionUrl = getAllowedSubmissionUrl(req.body?.link_entrega);
+    const rawSubmissionUrl = String(req.body?.link_entrega || '').trim();
+    const submissionUrl = getAllowedSubmissionUrl(rawSubmissionUrl);
+    const textContent = String(req.body?.text_content || '').trim();
     const ownsStoragePath = storagePath.startsWith(`${req.user.id}/${req.params.id}/`) && !storagePath.includes('..');
-    if ((!submissionUrl && !ownsStoragePath) || (submissionUrl && storagePath)) return res.status(400).json({ error: INVALID_SUBMISSION_LINK });
-    if ((!submissionUrl && !ownsStoragePath) || (submissionUrl && storagePath)) {
-      return res.status(400).json({ error: 'Cole um link válido iniciado por http:// ou https://.' });
+    if (textContent.length > 10000) return res.status(400).json({ error: 'A resposta de texto deve ter até 10.000 caracteres.' });
+    if ((rawSubmissionUrl && !submissionUrl) || (storagePath && !ownsStoragePath) || (submissionUrl && storagePath)) {
+      return res.status(400).json({ error: INVALID_SUBMISSION_LINK });
+    }
+    if (!submissionUrl && !ownsStoragePath && !textContent) {
+      return res.status(400).json({ error: 'Envie uma resposta de texto, um link válido ou um arquivo.' });
     }
     const profile = await getUserRole(req.user.id);
     if (profile.role !== 'STUDENT') {
@@ -232,28 +267,29 @@ exports.submitAssignment = async (req, res) => {
       .maybeSingle();
     if (existingError) throw existingError;
 
-    const storedLink = storagePath ? `storage://${storagePath}` : submissionUrl.toString();
+    const storedLink = storagePath ? `storage://${storagePath}` : submissionUrl?.toString() || null;
+    const submissionFields = { status: 'SUBMITTED', submitted_at: new Date().toISOString(), link_entrega: storedLink, text_content: textContent || null };
     const { data: submission, error: saveError } = existing
       ? await supabase
         .from('assignment_submissions')
-        .update({ status: 'SUBMITTED', submitted_at: new Date().toISOString(), link_entrega: storedLink })
+        .update(submissionFields)
         .eq('assignment_id', assignment.id)
         .eq('student_id', req.user.id)
-        .select('assignment_id, student_id, status, submitted_at, link_entrega, grade, feedback')
+        .select('assignment_id, student_id, status, submitted_at, link_entrega, text_content, grade, feedback')
         .single()
       : await supabase
         .from('assignment_submissions')
-        .insert({ assignment_id: assignment.id, student_id: req.user.id, status: 'SUBMITTED', submitted_at: new Date().toISOString(), link_entrega: storedLink })
-        .select('assignment_id, student_id, status, submitted_at, link_entrega, grade, feedback')
+        .insert({ assignment_id: assignment.id, student_id: req.user.id, ...submissionFields })
+        .select('assignment_id, student_id, status, submitted_at, link_entrega, text_content, grade, feedback')
         .single();
     if (saveError) {
       if (saveError.code === '23505') {
         const { data: updated, error: updateError } = await supabase
           .from('assignment_submissions')
-          .update({ status: 'SUBMITTED', submitted_at: new Date().toISOString(), link_entrega: storedLink })
+          .update(submissionFields)
           .eq('assignment_id', assignment.id)
           .eq('student_id', req.user.id)
-          .select('assignment_id, student_id, status, submitted_at, link_entrega, grade, feedback')
+          .select('assignment_id, student_id, status, submitted_at, link_entrega, text_content, grade, feedback')
           .single();
         if (updateError) throw updateError;
         return res.json({ message: 'Atividade marcada como concluída.', submission: updated });

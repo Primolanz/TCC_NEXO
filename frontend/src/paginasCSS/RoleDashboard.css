@@ -58,6 +58,13 @@
 .role-form-grid input:focus, .role-form-grid select:focus, .role-form-grid textarea:focus { border-color: #9255ca; }
 .role-form-grid input::placeholder, .role-form-grid textarea::placeholder { color: #756b7e; }
 .role-date-selects { display: grid; grid-template-columns: .75fr 1.35fr 1fr; gap: 8px; }
+.role-date-time-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.role-date-time-fields label { min-width: 0; }
+.submissions-filters { margin-bottom: 20px; }
+.teacher-class-submissions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.teacher-submission-card.submission-pending { border-color: #514650; }
+.role-badge.submission-received { border-color: #28624f; color: #a8e9ca; background: #142b24; }
+.role-badge.submission-missing { border-color: #66572f; color: #f1d89d; background: #302817; }
 .role-date-selects select { min-width: 0; min-height: 43px; padding: 8px 9px; border: 1px solid #3d304a; border-radius: 8px; outline: none; color: #f5edff; background: #0d0b10; font-size: 12px; }
 .role-date-selects select:focus { border-color: #9255ca; }
 .role-date-selects select:disabled { color: #756b7e; }
@@ -146,6 +153,7 @@
 .teacher-submission-card > strong { color: #f2eafd; font-size: 13px; }
 .teacher-submission-card > small { color: #aaa0b4; font-size: 11px; }
 .teacher-submission-card > a { width: fit-content; color: #c99bff; font-size: 12px; font-weight: 800; }
+.assignment-submission-text { margin: 0; color: #e5d9ef; font-size: 13px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
 .teacher-submission-card label { display: grid; gap: 6px; color: #c8bdcf; font-size: 11px; }
 .teacher-submission-card input, .teacher-submission-card textarea { width: 100%; padding: 9px 10px; border: 1px solid #43334f; border-radius: 8px; color: #f4eefa; background: #100d14; }
 .teacher-submission-card textarea { min-height: 72px; resize: vertical; }

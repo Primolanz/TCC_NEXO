@@ -83,10 +83,32 @@ exports.refreshSession = async (req, res) => {
 };
 
 exports.loginUser = async (req, res) => {
+  const requestedEmail = String(req.body?.email || '').trim().toLowerCase();
+  const requestedRole = req.body?.role ?? req.body?.type ?? req.body?.tipo ?? null;
+  console.log('Dados recebidos no login:', { email: requestedEmail, role: requestedRole });
+
   try {
-    const { email, password } = req.body || {};
+    const { password } = req.body || {};
+    const email = requestedEmail;
     if (!email || !password) {
       return res.status(400).json({ message: 'E-mail e senha são obrigatórios.' });
+    }
+
+    let matchingProfileFound = null;
+    if (process.env.NODE_ENV !== 'production') {
+      const { data: matchingProfile, error: lookupError } = await supabase
+        .from('users')
+        .select('id')
+        .ilike('email', email)
+        .maybeSingle();
+      if (lookupError) {
+        console.error('[Login][dev] Erro exato na consulta case-insensitive de usuário:', lookupError);
+      } else {
+        matchingProfileFound = Boolean(matchingProfile);
+        if (!matchingProfileFound) {
+          console.log('Utilizador não encontrado no Supabase:', email);
+        }
+      }
     }
 
     // 1. Autentica no Supabase Auth
@@ -97,6 +119,8 @@ exports.loginUser = async (req, res) => {
 
     if (authError) {
       if (isEmailRateLimitError(authError)) return res.status(429).json({ error: friendlyAuthError(authError) });
+      if (matchingProfileFound) console.log('Senha incorreta para:', email);
+      if (process.env.NODE_ENV !== 'production') console.error('[Login][dev] Erro exato retornado pelo Supabase Auth:', authError);
       return res.status(400).json({ message: 'Credenciais inválidas.' });
     }
 
@@ -108,7 +132,21 @@ exports.loginUser = async (req, res) => {
       .single();
 
     if (userError) {
+      if (userError.code === 'PGRST116') {
+        console.log('Utilizador não encontrado no Supabase:', email);
+        return res.status(404).json({ message: 'Perfil de usuário não encontrado.' });
+      }
+      console.error('[Login] Falha ao consultar o perfil público após autenticação:', {
+        email: requestedEmail,
+        code: userError.code,
+        message: userError.message,
+      });
       throw userError;
+    }
+
+    if (!userData) {
+      console.error('[Login] Usuário autenticado sem perfil correspondente na tabela users:', { email: requestedEmail });
+      return res.status(404).json({ message: 'Perfil de usuário não encontrado.' });
     }
 
     if (userData.role === 'TEACHER' && userData.status_approval !== 'APPROVED') {
@@ -148,6 +186,7 @@ exports.loginUser = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error('[Login] Erro interno durante autenticação:', error.message);
     if (res.headersSent) return;
     return res.status(500).json({ message: 'Erro interno no servidor ao realizar login.' });
   }
