@@ -12,7 +12,11 @@ const caminhosPorPerfil = {
 };
 
 // URL da API configurada de forma dinâmica (Render ou Localhost)
-const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:3000").replace(/\/+$/, "");
+const rawUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const cleanedUrl = `https://${rawUrl
+  .replace(/^["'\[]+|["'\]]+$/g, "")
+  .replace(/^https?:\/\//i, "")
+  .replace(/\/+$/, "")}`;
 
 function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
   const [email, setEmail] = useState("");
@@ -50,7 +54,7 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
 
     try {
       // 1. Requisitar login para a API Node.js (dinâmico)
-      const resposta = await fetch(`${API_BASE_URL}/api/users/login`, {
+      const resposta = await fetch(`${cleanedUrl}/api/users/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

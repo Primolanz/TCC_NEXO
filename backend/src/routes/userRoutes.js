@@ -5,7 +5,7 @@ const authMiddleware = require('../middlewares/auth');
 const passwordController = require('../controllers/passwordController');
 
 router.post('/register', userController.registerUser);
-router.post('/login', userController.login);
+router.post(['/login', '/login/'], userController.login);
 router.post('/refresh', userController.refreshSession);
 router.post('/password/recovery', passwordController.requestReset);
 router.put('/password', authMiddleware, passwordController.updatePassword);
