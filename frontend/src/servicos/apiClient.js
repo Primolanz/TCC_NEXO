@@ -1,4 +1,5 @@
-export const cleanedUrl = (import.meta.env.VITE_API_URL || 'https://nexo-backend.onrender.com').replace(/^["'\[]+|["'\]\)]+$/g, '').replace(/\/+$/, '')
+const rawUrl = import.meta.env.VITE_API_URL || 'https://nexo-backend.onrender.com'
+export const cleanedUrl = rawUrl.replace(/^["'\[]+|["'\]\)]+$/g, '').replace(/\/+$/, '')
 const API_BASE_URL = `${cleanedUrl}/api`
 
 export function saveSession(session = {}) {
