@@ -12,7 +12,7 @@ const caminhosPorPerfil = {
 };
 
 // URL da API configurada de forma dinâmica (Render ou Localhost)
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:3000").replace(/\/+$/, "");
 
 function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
   const [email, setEmail] = useState("");
