@@ -1,4 +1,14 @@
-const API_BASE_URL = 'http://localhost:3000/api'
+const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+export let cleanedUrl = rawUrl.trim()
+if (cleanedUrl.includes('](')) {
+  cleanedUrl = cleanedUrl.split('](')[0].replace(/^\[/, '')
+}
+cleanedUrl = cleanedUrl.replace(/^['"\[]+|['"\]\)]+$/g, '').replace(/\/+$/, '')
+if (!cleanedUrl.startsWith('http://') && !cleanedUrl.startsWith('https://')) {
+  cleanedUrl = `https://${cleanedUrl}`
+}
+
+const API_BASE_URL = `${cleanedUrl}/api`
 
 export function saveSession(session = {}) {
   const accessToken = session.access_token || session.accessToken || session.token
