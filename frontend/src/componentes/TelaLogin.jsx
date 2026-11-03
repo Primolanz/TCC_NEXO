@@ -58,11 +58,19 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
         body: JSON.stringify({ email, password }),
       });
 
-      const dados = await resposta.json();
+      const textoResposta = await resposta.text();
+      let dados = {};
+      if (textoResposta) {
+        try {
+          dados = JSON.parse(textoResposta);
+        } catch {
+          throw new Error(`Resposta inválida do servidor (HTTP ${resposta.status}).`);
+        }
+      }
 
       if (!resposta.ok) {
         throw new Error(
-          dados.message || dados.error || "Falha ao realizar login.",
+          dados.message || dados.error || `Erro (${resposta.status}) ao conectar ao servidor.`,
         );
       }
 

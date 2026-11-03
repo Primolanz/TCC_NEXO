@@ -83,13 +83,12 @@ exports.refreshSession = async (req, res) => {
 };
 
 exports.loginUser = async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
-  }
-
   try {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res.status(400).json({ message: 'E-mail e senha são obrigatórios.' });
+    }
+
     // 1. Autentica no Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
@@ -98,7 +97,7 @@ exports.loginUser = async (req, res) => {
 
     if (authError) {
       if (isEmailRateLimitError(authError)) return res.status(429).json({ error: friendlyAuthError(authError) });
-      return res.status(401).json({ error: 'Credenciais inválidas.' });
+      return res.status(400).json({ message: 'Credenciais inválidas.' });
     }
 
     // 2. Busca o perfil completo na tabela pública 'users'
@@ -109,7 +108,7 @@ exports.loginUser = async (req, res) => {
       .single();
 
     if (userError) {
-      return res.status(400).json({ error: 'Erro ao buscar perfil do usuário.' });
+      throw userError;
     }
 
     if (userData.role === 'TEACHER' && userData.status_approval !== 'APPROVED') {
@@ -149,7 +148,8 @@ exports.loginUser = async (req, res) => {
       },
     });
   } catch (error) {
-    return res.status(isEmailRateLimitError(error) ? 429 : 500).json({ error: friendlyAuthError(error, 'Erro interno ao realizar login.') });
+    if (res.headersSent) return;
+    return res.status(500).json({ message: 'Erro interno no servidor ao realizar login.' });
   }
 };
 
