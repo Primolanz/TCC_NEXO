@@ -20,7 +20,15 @@ const diagnosticFormsRoutes = require('./routes/diagnosticFormsRoutes');
 const app = express();
 
 // 3. Middlewares Globais
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://nexo-educacao.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000'
+  ],
+  credentials: true
+}));
+
 app.use(express.json());
 
 // ROTA RAIZ ESTILIZADA (Status da API para o Cold Start do Render)
