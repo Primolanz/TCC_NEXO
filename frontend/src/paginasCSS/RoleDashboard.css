@@ -88,6 +88,8 @@
 .role-report-metrics span { color: #aaa0b4; font-size: 11px; }
 .role-report-metrics strong { color: #d6b2ff; font-size: 22px; }
 .role-activities-list { margin-top: 22px; }
+.teacher-activity-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.teacher-activity-actions .role-primary-button, .teacher-activity-actions .role-secondary-button { min-height: 38px; padding: 0 12px; }
 
 @media (max-width: 760px) {
   .role-sidebar { position: relative; height: auto; }

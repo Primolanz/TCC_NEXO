@@ -137,6 +137,103 @@ exports.createAssignment = async (req, res) => {
   }
 };
 
+async function getOwnedTeacherAssignment(req, res) {
+  const profile = await getUserRole(req.user.id);
+  if (profile.role !== 'TEACHER' || profile.status_approval !== 'APPROVED') {
+    res.status(403).json({ error: 'Apenas professores aprovados podem gerenciar atividades.' });
+    return null;
+  }
+
+  const { data: assignment, error: assignmentError } = await supabase
+    .from('assignments')
+    .select('id, title, description, class_id, due_date, created_at')
+    .eq('id', req.params.id)
+    .maybeSingle();
+  if (assignmentError) throw assignmentError;
+  if (!assignment) {
+    res.status(404).json({ error: 'Atividade não encontrada.' });
+    return null;
+  }
+
+  const { data: classItem, error: classError } = await supabase
+    .from('classes')
+    .select('id, name')
+    .eq('id', assignment.class_id)
+    .eq('teacher_id', req.user.id)
+    .maybeSingle();
+  if (classError) throw classError;
+  if (!classItem) {
+    res.status(403).json({ error: 'Esta atividade não pertence a uma turma sua.' });
+    return null;
+  }
+  return { assignment, classItem };
+}
+
+exports.updateAssignment = async (req, res) => {
+  try {
+    const owned = await getOwnedTeacherAssignment(req, res);
+    if (!owned) return;
+
+    const title = req.body?.title === undefined ? owned.assignment.title : String(req.body.title).trim();
+    const description = req.body?.description === undefined ? owned.assignment.description || '' : String(req.body.description).trim();
+    const dueDate = req.body?.due_date === undefined ? owned.assignment.due_date : req.body.due_date || null;
+    if (!title) return res.status(400).json({ error: 'Informe o título da atividade.' });
+    if (dueDate && !isValidIsoDueDate(dueDate)) {
+      return res.status(400).json({ error: 'Informe uma data de entrega válida no formato ISO 8601.' });
+    }
+
+    const { data: assignment, error } = await supabase
+      .from('assignments')
+      .update({ title, description, due_date: dueDate })
+      .eq('id', owned.assignment.id)
+      .select('id, title, description, class_id, due_date, created_at')
+      .single();
+    if (error) throw error;
+    return res.json({ message: 'Atividade atualizada com sucesso.', assignment: { ...assignment, class_name: owned.classItem.name } });
+  } catch (error) {
+    console.error('[Atividades] Falha ao atualizar atividade:', error.message);
+    return res.status(500).json({ error: 'Não foi possível atualizar a atividade.' });
+  }
+};
+
+exports.deleteAssignment = async (req, res) => {
+  try {
+    const owned = await getOwnedTeacherAssignment(req, res);
+    if (!owned) return;
+
+    const { data: submissions, error: submissionsQueryError } = await supabase
+      .from('assignment_submissions')
+      .select('link_entrega')
+      .eq('assignment_id', owned.assignment.id);
+    if (submissionsQueryError) throw submissionsQueryError;
+
+    const storedPaths = (submissions || [])
+      .map((submission) => String(submission.link_entrega || ''))
+      .filter((link) => link.startsWith('storage://'))
+      .map((link) => link.slice('storage://'.length));
+    if (storedPaths.length) {
+      const { error: storageError } = await supabase.storage.from(SUBMISSION_BUCKET).remove(storedPaths);
+      if (storageError) throw storageError;
+    }
+
+    const { error: submissionsError } = await supabase
+      .from('assignment_submissions')
+      .delete()
+      .eq('assignment_id', owned.assignment.id);
+    if (submissionsError) throw submissionsError;
+
+    const { error } = await supabase
+      .from('assignments')
+      .delete()
+      .eq('id', owned.assignment.id);
+    if (error) throw error;
+    return res.json({ message: 'Atividade excluída com sucesso.' });
+  } catch (error) {
+    console.error('[Atividades] Falha ao excluir atividade:', error.message);
+    return res.status(500).json({ error: 'Não foi possível excluir a atividade.' });
+  }
+};
+
 exports.listStudentAssignments = async (req, res) => {
   try {
     const profile = await getUserRole(req.user.id);
