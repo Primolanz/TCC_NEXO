@@ -164,7 +164,7 @@ exports.listStudentAssignments = async (req, res) => {
       .from('assignments')
       .select('id, title, description, class_id, due_date, created_at')
       .in('class_id', classIds)
-      .order('due_date', { ascending: true, nullsFirst: false });
+      .order('created_at', { ascending: false });
     if (error) throw error;
 
     const assignmentIds = (assignments || []).map((item) => item.id);
