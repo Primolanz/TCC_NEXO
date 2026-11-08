@@ -121,7 +121,14 @@ exports.loginUser = async (req, res) => {
       if (isEmailRateLimitError(authError)) return res.status(429).json({ error: friendlyAuthError(authError) });
       if (matchingProfileFound) console.log('Senha incorreta para:', email);
       if (process.env.NODE_ENV !== 'production') console.error('[Login][dev] Erro exato retornado pelo Supabase Auth:', authError);
-      return res.status(400).json({ message: 'Credenciais inválidas.' });
+      const authCode = String(authError.code || authError.error_code || '').toLowerCase();
+      if (authCode === 'email_not_confirmed') {
+        return res.status(403).json({ error: 'Seu e-mail ainda não foi confirmado.', code: authCode });
+      }
+      if (authCode === 'user_not_found' || authCode === 'email_not_found') {
+        return res.status(404).json({ error: 'E-mail ainda não cadastrado.', code: authCode });
+      }
+      return res.status(400).json({ message: 'Credenciais inválidas.', code: authCode });
     }
 
     // 2. Busca o perfil completo na tabela pública 'users'
@@ -193,6 +200,39 @@ exports.loginUser = async (req, res) => {
 };
 
 exports.login = exports.loginUser;
+
+exports.verifyEmailOtp = async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const token = String(req.body?.token || '').trim();
+  if (!email || !/^\d{6}$/.test(token)) {
+    return res.status(400).json({ error: 'Informe o e-mail e o código de 6 dígitos.' });
+  }
+  try {
+    const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'signup' });
+    if (error) {
+      const limited = /rate.?limit|too many requests/i.test(`${error.code || ''} ${error.message || ''}`);
+      return res.status(limited ? 429 : 400).json({ error: error.message, code: error.code });
+    }
+    return res.status(200).json({ verified: true, user: data.user });
+  } catch {
+    return res.status(500).json({ error: 'Não foi possível confirmar o e-mail.' });
+  }
+};
+
+exports.resendSignupOtp = async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  if (!email) return res.status(400).json({ error: 'Informe seu e-mail.' });
+  try {
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    if (error) {
+      const limited = /rate.?limit|too many requests/i.test(`${error.code || ''} ${error.message || ''}`);
+      return res.status(limited ? 429 : 400).json({ error: error.message, code: error.code });
+    }
+    return res.status(200).json({ sent: true });
+  } catch {
+    return res.status(500).json({ error: 'Não foi possível reenviar o código.' });
+  }
+};
 
 exports.getMyProfile = async (req, res) => {
   try {

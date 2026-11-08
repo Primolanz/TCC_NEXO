@@ -131,6 +131,16 @@
 
 .icone-status-aprovacao { display: grid; width: 58px; height: 58px; margin: 0 auto 18px; place-items: center; border-radius: 50%; color: #b780ff; background: rgba(128, 51, 233, 0.16); font-size: 31px; }
 
+.otp-card { border: 1px solid rgba(168, 85, 247, 0.25); background: linear-gradient(145deg, #21172e, #15131b); }
+.otp-icon { display: grid; width: 56px; height: 56px; margin: 0 auto 16px; place-items: center; border: 1px solid #a855f755; border-radius: 17px; color: #d8b4fe; background: #7c3aed26; font-size: 26px; }
+.otp-warning { margin: 18px 0; padding: 14px 15px; border: 1px solid #f59e0b66; border-radius: 10px; color: #fde7b0; background: #78350f38; font-size: 12px; line-height: 1.55; }
+.otp-input { min-height: 60px; border: 1px solid #8033e977; letter-spacing: 0.55em; text-align: center; font-size: 26px; font-weight: 700; }
+.otp-hint { margin-top: -9px; color: #aaa1b4; font-size: 11px; text-align: center; }
+.otp-error { margin: 0 0 15px; padding: 10px; border: 1px solid #ef444455; border-radius: 8px; color: #fecaca; background: #7f1d1d44; font-size: 13px; text-align: center; }
+.otp-resend { display: block; margin: 14px auto 0; padding: 8px 12px; border: 0; color: #c4a2f5; background: transparent; font-size: 13px; font-weight: 600; }
+.otp-resend:hover:not(:disabled) { color: #ffffff; text-decoration: underline; }
+.otp-resend:disabled { color: #77717f; cursor: not-allowed; }
+
 @media (max-width: 420px) {
   .conteudo-central-login { min-height: calc(100vh - 62px); padding: 16px; }
   .cartao-login { padding: 20px 18px; }

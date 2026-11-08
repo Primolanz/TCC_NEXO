@@ -4,6 +4,7 @@ import "../../paginasCSS/Login.css";
 import CabecalhoPagina from "../../componentes/CabecalhoPagina.jsx";
 import CampoSenha from "../../componentes/CampoSenha.jsx";
 import { saveSession } from "../../servicos/apiClient.js";
+import { friendlyAuthMessage, readAuthResponse } from "../../servicos/authErrors.js";
 
 const toTitleCase = (str) => {
   const preposicoes = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
@@ -53,13 +54,7 @@ function CadastroAluno() {
         }),
       });
 
-      const dados = await resposta.json();
-
-      if (!resposta.ok) {
-        throw new Error(
-          dados.message || dados.error || "Erro ao criar conta de aluno.",
-        );
-      }
+      const dados = await readAuthResponse(resposta);
 
       // 2. Se a API já retornar um token JWT no cadastro, salvamos a sessão
       const tokenRecebido =
@@ -69,10 +64,13 @@ function CadastroAluno() {
         localStorage.setItem("nexo_user", JSON.stringify(dados.user || {}));
       }
 
-      // 3. Redireciona para a tela de confirmação de e-mail (ou onboarding)
-      navegar("/cadastro/aluno/confirmar-email");
+      if (!tokenRecebido) {
+        navegar('/cadastro/confirmar-codigo', { state: { email, role: 'STUDENT' } });
+      } else {
+        navegar('/login', { replace: true, state: { successMessage: 'Conta criada com sucesso! Você já pode fazer login.' } });
+      }
     } catch (err) {
-      definirErro(err.message);
+      definirErro(friendlyAuthMessage(err));
     } finally {
       definirCarregando(false);
     }

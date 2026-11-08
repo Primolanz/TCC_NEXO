@@ -4,6 +4,7 @@ import '../../paginasCSS/Login.css'
 import CabecalhoPagina from '../../componentes/CabecalhoPagina.jsx'
 import CampoSenha from '../../componentes/CampoSenha.jsx'
 import { clearSession } from '../../servicos/apiClient.js'
+import { friendlyAuthMessage, readAuthResponse } from '../../servicos/authErrors.js'
 
 const toTitleCase = (str) => {
   const preposicoes = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
@@ -43,17 +44,15 @@ function CadastroProfessor() {
           role: 'TEACHER',
         }),
       })
-      const dados = await resposta.json()
-      if (!resposta.ok) throw new Error(dados.message || dados.error || 'Não foi possível criar a conta.')
+      const dados = await readAuthResponse(resposta)
 
-      // Um cadastro pendente não deve deixar uma sessão autenticada no navegador.
       clearSession()
-      navegar('/cadastro/professor/aguardando-aprovacao', {
-        state: { mensagem: dados.message },
+      navegar('/cadastro/confirmar-codigo', {
+        state: { email: form.get('email'), role: 'TEACHER', mensagem: dados.message },
         replace: true,
       })
     } catch (falha) {
-      definirErro(falha.message)
+      definirErro(friendlyAuthMessage(falha))
     } finally {
       definirCarregando(false)
     }
