@@ -33,7 +33,7 @@ function CadastroProfessor() {
     definirCarregando(true)
     const form = new FormData(evento.currentTarget)
     try {
-      const resposta = await fetch('http://localhost:3000/api/users/register', {
+      const resposta = await fetch(`${import.meta.env.VITE_API_URL}/api/users/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

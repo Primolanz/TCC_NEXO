@@ -38,7 +38,7 @@ function CadastroAluno() {
 
     try {
       // Substitua o fetch no CadastroAluno.jsx por este formato que atende ambas as convenções:
-      const resposta = await fetch("http://localhost:3000/api/users/register", {
+      const resposta = await fetch(`${import.meta.env.VITE_API_URL}/api/users/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
