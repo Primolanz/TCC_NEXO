@@ -11,24 +11,18 @@ exports.registerUser = async (req, res) => {
 
   try {
     // Cadastra credenciais no Supabase Auth
-<<<<<<< HEAD
     let authData;
     let authError;
     try {
-      ({ data: authData, error: authError } = await supabase.auth.signUp({ email, password }));
+      ({ data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { name, role: normalizedRole } },
+      }));
     } catch (error) {
-      console.error('[Cadastro] Supabase Auth indisponÃ­vel:', error.message);
-      return res.status(502).json({ error: 'NÃ£o foi possÃ­vel criar a conta no serviÃ§o de autenticaÃ§Ã£o. Tente novamente.' });
+      console.error('[Cadastro] Supabase Auth indispon?vel:', error.message);
+      return res.status(502).json({ error: 'N?o foi poss?vel criar a conta no servi?o de autentica??o. Tente novamente.' });
     }
-=======
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { name, role: normalizedRole },
-      },
-    });
->>>>>>> 538945dd28b0a0d69442583ba5641a486aa81ea2
 
     if (authError) {
       const authErrorText = `${authError.code || ''} ${authError.message || ''}`;
@@ -141,9 +135,6 @@ exports.loginUser = async (req, res) => {
       if (isEmailRateLimitError(authError)) return res.status(429).json({ error: friendlyAuthError(authError) });
       if (matchingProfileFound) console.log('Senha incorreta para:', email);
       if (process.env.NODE_ENV !== 'production') console.error('[Login][dev] Erro exato retornado pelo Supabase Auth:', authError);
-<<<<<<< HEAD
-      return res.status(400).json({ message: 'Credenciais invÃ¡lidas.' });
-=======
       const authCode = String(authError.code || authError.error_code || '').toLowerCase();
       if (authCode === 'email_not_confirmed') {
         return res.status(403).json({ error: 'Seu e-mail ainda não foi confirmado.', code: authCode });
@@ -152,7 +143,6 @@ exports.loginUser = async (req, res) => {
         return res.status(404).json({ error: 'E-mail ainda não cadastrado.', code: authCode });
       }
       return res.status(400).json({ message: 'Credenciais inválidas.', code: authCode });
->>>>>>> 538945dd28b0a0d69442583ba5641a486aa81ea2
     }
 
     // 2. Busca o perfil completo na tabela pÃºblica 'users'
