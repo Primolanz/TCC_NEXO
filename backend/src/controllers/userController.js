@@ -14,6 +14,9 @@ exports.registerUser = async (req, res) => {
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: { name, role: normalizedRole },
+      },
     });
 
     if (authError) {
@@ -50,6 +53,8 @@ exports.registerUser = async (req, res) => {
     }
 
     return res.status(201).json({
+      // Preserve Supabase Auth's user/session response for the OTP flow.
+      auth: authData,
       message: normalizedRole === 'TEACHER'
         ? 'Conta criada com sucesso. Seu cadastro de professor está pendente de aprovação pelo administrador.'
         : 'Usuário cadastrado com sucesso!',

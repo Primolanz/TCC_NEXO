@@ -15,6 +15,8 @@ export function friendlyAuthMessage(error, { status, message, code } = {}) {
   for (const friendly of Object.values(MESSAGES)) if (details.includes(friendly.toLowerCase())) return friendly
   if (error instanceof TypeError || /failed to fetch|network|fetch failed|connection|econnrefused|etimedout/.test(details)) return MESSAGES.network
   if (responseStatus === 429 || /too many requests|rate.?limit|over_request_rate_limit/.test(details)) return MESSAGES.rate
+  if (/otp_expired|token.*(expired|expirou)|code.*(expired|expirou)/.test(details)) return 'Este código expirou. Solicite um novo código e tente novamente.'
+  if (/otp_invalid|invalid.*(otp|token|code)|token.*invalid|code.*invalid/.test(details)) return 'O código informado é inválido. Confira os seis dígitos do e-mail e tente novamente.'
   if (/23505|user[_ ]already[_ ]exists|already[_ ]registered|already[_ ]exists|email.*(taken|registered|exists|já cadastrado)/.test(details)) return MESSAGES.exists
   if (/email_not_found|user_not_found|no user|user does not exist|usuário não encontrado|perfil de usuário não encontrado/.test(details) || responseStatus === 404) return MESSAGES.missing
   if (/email not confirmed|email_not_confirmed|unconfirmed/.test(details)) return MESSAGES.unconfirmed

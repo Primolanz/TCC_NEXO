@@ -33,7 +33,7 @@ function VerificarEmail() {
       const response = await apiClient('/users/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, token: codigo }),
+        body: JSON.stringify({ email, token: codigo, type: 'signup' }),
       })
       await readAuthResponse(response)
       clearSession()
