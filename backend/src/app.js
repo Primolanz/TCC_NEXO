@@ -19,7 +19,7 @@ const diagnosticFormsRoutes = require('./routes/diagnosticFormsRoutes');
 
 // 2. Inicialização do App
 const app = express();
-const rawFrontendUrl = process.env.FRONTEND_URL || 'https://nexo-educacao.vercel.app';
+const rawFrontendUrl = process.env.FRONTEND_URL || 'https://nexo-educacao.netlify.app';
 const cleanFrontendUrl = rawFrontendUrl
   .replace(/^['"\[]+|['"\]]+$/g, '')
   .split('](')[0]

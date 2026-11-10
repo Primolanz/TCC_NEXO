@@ -11,6 +11,7 @@ exports.registerUser = async (req, res) => {
 
   try {
     // Cadastra credenciais no Supabase Auth
+<<<<<<< HEAD
     let authData;
     let authError;
     try {
@@ -19,6 +20,15 @@ exports.registerUser = async (req, res) => {
       console.error('[Cadastro] Supabase Auth indisponÃ­vel:', error.message);
       return res.status(502).json({ error: 'NÃ£o foi possÃ­vel criar a conta no serviÃ§o de autenticaÃ§Ã£o. Tente novamente.' });
     }
+=======
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name, role: normalizedRole },
+      },
+    });
+>>>>>>> 538945dd28b0a0d69442583ba5641a486aa81ea2
 
     if (authError) {
       const authErrorText = `${authError.code || ''} ${authError.message || ''}`;
@@ -58,6 +68,8 @@ exports.registerUser = async (req, res) => {
     }
 
     return res.status(201).json({
+      // Preserve Supabase Auth's user/session response for the OTP flow.
+      auth: authData,
       message: normalizedRole === 'TEACHER'
         ? 'Conta criada com sucesso. Seu cadastro de professor estÃ¡ pendente de aprovaÃ§Ã£o pelo administrador.'
         : 'UsuÃ¡rio cadastrado com sucesso!',
@@ -129,7 +141,18 @@ exports.loginUser = async (req, res) => {
       if (isEmailRateLimitError(authError)) return res.status(429).json({ error: friendlyAuthError(authError) });
       if (matchingProfileFound) console.log('Senha incorreta para:', email);
       if (process.env.NODE_ENV !== 'production') console.error('[Login][dev] Erro exato retornado pelo Supabase Auth:', authError);
+<<<<<<< HEAD
       return res.status(400).json({ message: 'Credenciais invÃ¡lidas.' });
+=======
+      const authCode = String(authError.code || authError.error_code || '').toLowerCase();
+      if (authCode === 'email_not_confirmed') {
+        return res.status(403).json({ error: 'Seu e-mail ainda não foi confirmado.', code: authCode });
+      }
+      if (authCode === 'user_not_found' || authCode === 'email_not_found') {
+        return res.status(404).json({ error: 'E-mail ainda não cadastrado.', code: authCode });
+      }
+      return res.status(400).json({ message: 'Credenciais inválidas.', code: authCode });
+>>>>>>> 538945dd28b0a0d69442583ba5641a486aa81ea2
     }
 
     // 2. Busca o perfil completo na tabela pÃºblica 'users'
@@ -201,6 +224,45 @@ exports.loginUser = async (req, res) => {
 };
 
 exports.login = exports.loginUser;
+
+exports.verifyEmailOtp = async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const otpCode = String(req.body?.otpCode || req.body?.token || '').trim();
+  if (!email || !/^\d{6,8}$/.test(otpCode)) {
+    return res.status(400).json({ message: 'Informe o e-mail e um código válido de até 8 dígitos.' });
+  }
+  try {
+    let { data, error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: 'email' });
+    if (error && /invalid/i.test(error.message || '')) {
+      const secondaryAttempt = await supabase.auth.verifyOtp({ email, token: otpCode, type: 'signup' });
+      data = secondaryAttempt.data;
+      error = secondaryAttempt.error;
+    }
+    if (error) {
+      const limited = /rate.?limit|too many requests/i.test(`${error.code || ''} ${error.message || ''}`);
+      if (limited) return res.status(429).json({ message: error.message, code: error.code });
+      return res.status(400).json({ message: 'Código inválido ou expirado. Verifique o código recebido por e-mail.', code: error.code });
+    }
+    return res.status(200).json({ message: 'E-mail verificado com sucesso!', data });
+  } catch {
+    return res.status(500).json({ message: 'Não foi possível confirmar o e-mail.' });
+  }
+};
+
+exports.resendSignupOtp = async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  if (!email) return res.status(400).json({ error: 'Informe seu e-mail.' });
+  try {
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    if (error) {
+      const limited = /rate.?limit|too many requests/i.test(`${error.code || ''} ${error.message || ''}`);
+      return res.status(limited ? 429 : 400).json({ error: error.message, code: error.code });
+    }
+    return res.status(200).json({ sent: true });
+  } catch {
+    return res.status(500).json({ error: 'Não foi possível reenviar o código.' });
+  }
+};
 
 exports.getMyProfile = async (req, res) => {
   try {

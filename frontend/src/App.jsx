@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import PaginaInicial from './paginas/PaginaInicial.jsx'
 import DashboardAluno from './paginas/DashboardAluno.jsx'
 import Login from './paginas/Login/Login.jsx'
@@ -8,6 +8,7 @@ import LoginAdministrador from './paginas/Login/LoginAdministrador.jsx'
 import CadastroAluno from './paginas/Cadastro/CadastroAluno.jsx'
 import CadastroProfessor from './paginas/Cadastro/CadastroProfessor.jsx'
 import ConfirmarEmail from './paginas/Cadastro/ConfirmarEmail.jsx'
+import VerificarEmail from './paginas/Cadastro/VerificarEmail.jsx'
 import AguardandoAprovacaoProfessor from './paginas/Cadastro/AguardandoAprovacaoProfessor.jsx'
 import EscolherPlano from './paginas/OnboardingAluno/EscolherPlano.jsx'
 import CheckoutPlano from './paginas/OnboardingAluno/CheckoutPlano.jsx'
@@ -77,6 +78,23 @@ function RotaAutenticada({ children }) {
 
 function App() {
   const location = useLocation()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    const query = new URLSearchParams(window.location.search)
+    const confirmationType = hash.get('type') || query.get('type')
+    const hasAccessToken = hash.has('access_token') || query.has('access_token')
+
+    if (!hasAccessToken || confirmationType === 'recovery' || confirmationType === 'magiclink') return
+    if (confirmationType && confirmationType !== 'signup' && confirmationType !== 'email') return
+
+    window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}`)
+    navigate('/login', {
+      replace: true,
+      state: { successMessage: 'Conta confirmada com sucesso! Faça login para continuar' },
+    })
+  }, [navigate])
 
   return (
     <div key={`${location.pathname}${location.search}`} className="route-transition">
@@ -96,6 +114,7 @@ function App() {
       <Route path="/cadastro/aluno" element={<CadastroAluno />} />
       <Route path="/cadastro/professor" element={<CadastroProfessor />} />
       <Route path="/cadastro/aluno/confirmar-email" element={<ConfirmarEmail tipoUsuario="aluno" />} />
+      <Route path="/cadastro/confirmar-codigo" element={<VerificarEmail />} />
       <Route path="/cadastro/professor/confirmar-email" element={<ConfirmarEmail tipoUsuario="professor" />} />
       <Route path="/cadastro/professor/aguardando-aprovacao" element={<AguardandoAprovacaoProfessor />} />
 

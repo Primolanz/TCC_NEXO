@@ -9,5 +9,7 @@ router.get('/teacher', assignmentController.listTeacherAssignments);
 router.post('/:id/upload-url', assignmentController.createSubmissionUploadUrl);
 router.post('/:id/submit', assignmentController.submitAssignment);
 router.post('/', assignmentController.createAssignment);
+router.put('/:id', assignmentController.updateAssignment);
+router.delete('/:id', assignmentController.deleteAssignment);
 
 module.exports = router;

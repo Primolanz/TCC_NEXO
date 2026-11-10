@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import CampoSenha from "./CampoSenha.jsx";
 import CabecalhoPagina from "./CabecalhoPagina.jsx";
 import { apiClient, cleanedUrl, saveSession } from "../servicos/apiClient.js";
+import { friendlyAuthMessage, readAuthResponse } from "../servicos/authErrors.js";
 import "../paginasCSS/Login.css";
 
 const caminhosPorPerfil = {
@@ -21,6 +22,8 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
   const [validandoSessao, setValidandoSessao] = useState(() => perfilAtivo === "aluno" && Boolean(localStorage.getItem("nexo_token")));
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const mensagemSucesso = perfilAtivo === "aluno" ? location.state?.successMessage : "";
 
   useEffect(() => {
     if (perfilAtivo !== "aluno" || !localStorage.getItem("nexo_token")) return;
@@ -56,21 +59,7 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
         body: JSON.stringify({ email, password, role: perfilAtivo }),
       });
 
-      const textoResposta = await resposta.text();
-      let dados = {};
-      if (textoResposta) {
-        try {
-          dados = JSON.parse(textoResposta);
-        } catch {
-          throw new Error(`Resposta inválida do servidor (HTTP ${resposta.status}).`);
-        }
-      }
-
-      if (!resposta.ok) {
-        throw new Error(
-          dados.message || dados.error || `Erro (${resposta.status}) ao conectar ao servidor.`,
-        );
-      }
+      const dados = await readAuthResponse(resposta);
 
       // 2. Extrair e validar o Token JWT
       const tokenRecebido =
@@ -100,7 +89,7 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
         throw new Error("O perfil desta conta não possui um destino de acesso configurado.");
       }
     } catch (err) {
-      setErro(err.message);
+      setErro(friendlyAuthMessage(err));
     } finally {
       clearTimeout(timerColdStart);
       setCarregando(false);
@@ -119,6 +108,12 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
             Acessar como {titulo}
           </h1>
           <p className="descricao-login">{descricao}</p>
+
+          {mensagemSucesso && (
+            <div role="status" style={{ color: "#166534", backgroundColor: "#dcfce7", padding: "10px", borderRadius: "6px", marginBottom: "15px", fontSize: "14px", textAlign: "center" }}>
+              {mensagemSucesso}
+            </div>
+          )}
 
           <nav className="seletor-perfil" aria-label="Tipo de acesso">
             {Object.entries(caminhosPorPerfil).map(([perfil, caminho]) => (

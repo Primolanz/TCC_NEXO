@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { BookOpen, ClipboardList, FilePlus, LayoutDashboard, UsersRound, X } from 'lucide-react'
+import { BookOpen, ClipboardList, FilePlus, LayoutDashboard, Pencil, Trash2, UsersRound, X } from 'lucide-react'
 import RoleDashboard from '../componentes/RoleDashboard.jsx'
-import { apiClient } from '../servicos/apiClient.js'
+import { apiClient, cleanedUrl } from '../servicos/apiClient.js'
 
 const navigation = [
   { id: 'entregas', title: 'Entregas', icon: <ClipboardList /> },
@@ -63,6 +63,13 @@ function DashboardProfessor() {
   const [classes, setClasses] = useState([])
   const [activities, setActivities] = useState([])
   const [creatingActivity, setCreatingActivity] = useState(false)
+  const [editingActivity, setEditingActivity] = useState(null)
+  const [editActivityTitle, setEditActivityTitle] = useState('')
+  const [editActivityDescription, setEditActivityDescription] = useState('')
+  const [editActivityDate, setEditActivityDate] = useState('')
+  const [editActivityTime, setEditActivityTime] = useState('')
+  const [savingActivityEdit, setSavingActivityEdit] = useState(false)
+  const [deletingActivityId, setDeletingActivityId] = useState('')
   const [activityError, setActivityError] = useState('')
   const [activitySuccess, setActivitySuccess] = useState('')
   const [loadingClasses, setLoadingClasses] = useState(true)
@@ -175,11 +182,12 @@ function DashboardProfessor() {
     setSubmissionsError('')
     setSubmissionsLoading(true)
     try {
-      const response = await apiClient(`/submissions/assignment/${encodeURIComponent(assignment.id)}`)
+      const response = await fetch(`${cleanedUrl}/api/submissions/assignment/${encodeURIComponent(assignment.id)}`, { headers: { Authorization: `Bearer ${localStorage.getItem("nexo_token") || ""}` } })
       if (response.status === 404) {
         setAssignmentSubmissions([])
         return
       }
+      if (!response.ok) throw new Error('Não foi possível carregar as entregas.')
       const body = await readJsonResponse(response)
       if (!response.ok) throw new Error(body.error || 'Não foi possível carregar as entregas.')
       setAssignmentSubmissions(Array.isArray(body) ? body : Array.isArray(body.submissions) ? body.submissions : [])
@@ -212,13 +220,13 @@ function DashboardProfessor() {
       setEntregasAlunos(students.map((student) => ({ student, submission: null })))
       if (!students.length) return
 
-      const submissionsResponse = await apiClient(`/submissions/assignment/${encodeURIComponent(assignmentId)}`)
+      const submissionsResponse = await fetch(`${cleanedUrl}/api/submissions/assignment/${encodeURIComponent(assignmentId)}`, { headers: { Authorization: `Bearer ${localStorage.getItem('nexo_token') || ''}` } })
       if (submissionsResponse.status === 404) {
         setEntregasSemEnvios(true)
         return
       }
+      if (!submissionsResponse.ok) throw new Error('Não foi possível carregar as entregas.')
       const submissionsBody = await readJsonResponse(submissionsResponse)
-      if (!submissionsResponse.ok) throw new Error(submissionsBody.error || 'Falha ao carregar entregas.')
       const submissions = Array.isArray(submissionsBody) ? submissionsBody : Array.isArray(submissionsBody.submissions) ? submissionsBody.submissions : []
       if (requestId !== entregasRequestId.current) return
       setEntregasSemEnvios(submissions.length === 0)
@@ -356,6 +364,77 @@ function DashboardProfessor() {
     }
   }
 
+  function abrirEdicaoAtividade(assignment) {
+    const localDateTime = assignment.due_date ? formatSaoPauloDateTimeLocal(new Date(assignment.due_date)) : ''
+    const [date = '', time = ''] = localDateTime.split('T')
+    setEditingActivity(assignment)
+    setEditActivityTitle(assignment.title || '')
+    setEditActivityDescription(assignment.description || '')
+    setEditActivityDate(date)
+    setEditActivityTime(time)
+    setActivityError('')
+  }
+
+  async function salvarEdicaoAtividade(event) {
+    event.preventDefault()
+    if (!editingActivity) return
+    setActivityError('')
+    setActivitySuccess('')
+    if (Boolean(editActivityDate) !== Boolean(editActivityTime)) {
+      setActivityError('Preencha a data e o horário de entrega, ou deixe os dois vazios.')
+      return
+    }
+    const previousLocalDateTime = editingActivity.due_date ? formatSaoPauloDateTimeLocal(new Date(editingActivity.due_date)) : ''
+    const nextLocalDateTime = editActivityDate ? `${editActivityDate}T${editActivityTime}` : ''
+    if (nextLocalDateTime && nextLocalDateTime !== previousLocalDateTime && nextLocalDateTime < dataAtualFormatadaISO) {
+      setActivityError('A data e o horário limite precisam ser futuros.')
+      return
+    }
+
+    setSavingActivityEdit(true)
+    try {
+      const response = await apiClient(`/assignments/${encodeURIComponent(editingActivity.id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editActivityTitle.trim(),
+          description: editActivityDescription.trim(),
+          due_date: editActivityDate ? dateTimeLocalToIsoSaoPaulo(`${editActivityDate}T${editActivityTime}`) : null,
+        }),
+      })
+      const body = await readJsonResponse(response)
+      if (!response.ok) throw new Error(body.error || 'Não foi possível atualizar a atividade.')
+      setActivities((current) => current.map((item) => item.id === editingActivity.id ? body.assignment : item))
+      setEditingActivity(null)
+      setActivitySuccess('Atividade atualizada com sucesso.')
+    } catch (error) {
+      setActivityError(error.message || 'Não foi possível atualizar a atividade.')
+    } finally {
+      setSavingActivityEdit(false)
+    }
+  }
+
+  async function excluirAtividade(assignment) {
+    const confirmed = window.confirm(`Excluir a atividade "${assignment.title}"? As entregas dos alunos também serão removidas.`)
+    if (!confirmed) return
+
+    setActivityError('')
+    setActivitySuccess('')
+    setDeletingActivityId(assignment.id)
+    try {
+      const response = await apiClient(`/assignments/${encodeURIComponent(assignment.id)}`, { method: 'DELETE' })
+      const body = await readJsonResponse(response)
+      if (!response.ok) throw new Error(body.error || 'Não foi possível excluir a atividade.')
+      setActivities((current) => current.filter((item) => item.id !== assignment.id))
+      if (selectedAssignmentForSubmissions?.id === assignment.id) setSelectedAssignmentForSubmissions(null)
+      setActivitySuccess('Atividade excluída com sucesso.')
+    } catch (error) {
+      setActivityError(error.message || 'Não foi possível excluir a atividade.')
+    } finally {
+      setDeletingActivityId('')
+    }
+  }
+
   function renderContent({ user, activeTab, goToTab }) {
     const selectedClassReport = selectedReportClass ? reports.classes.find((report) => report.id === selectedReportClass.id) : null
     if (activeTab === 'inicio') {
@@ -393,7 +472,7 @@ function DashboardProfessor() {
           <label>Atividade<select value={entregasAssignmentId} disabled={!entregasClassId} onChange={(event) => setEntregasAssignmentId(event.target.value)}><option value="">Selecione uma atividade</option>{classAssignments.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>
         </div>
         {entregasError && <p className="role-notice" role="alert">{entregasError}</p>}
-        {entregasSemEnvios && entregasRosterLoaded && entregasAlunos.length > 0 && <p className="report-detail-empty">Nenhuma entrega cadastrada para esta atividade.</p>}
+        {entregasSemEnvios && entregasRosterLoaded && entregasAlunos.length > 0 && <p className="report-detail-empty">Nenhuma entrega encontrada para esta atividade.</p>}
         {entregasLoading ? <p className="report-detail-empty">Carregando alunos e entregas...</p> : entregasAssignmentId ? !entregasRosterLoaded ? null : entregasAlunos.length ? <div className="teacher-submission-list teacher-class-submissions">{entregasAlunos.map(({ student, submission }) => <article className={`teacher-submission-card ${submission ? '' : 'submission-pending'}`} key={student.id}><strong>{student.name}</strong><small>{student.email}</small><span className={`role-badge ${submission ? 'submission-received' : 'submission-missing'}`}>{submission ? 'Entregue' : 'Não entregue'}</span>{submission ? <><small>Entregue em {formatarDataAluno(submission.submitted_at)}</small>{submission.text_content && <p className="assignment-submission-text">{submission.text_content}</p>}{submission.external_link && <a href={submission.external_link} target="_blank" rel="noopener noreferrer">Abrir link enviado</a>}{submission.file_url && <a href={submission.file_url} target="_blank" rel="noopener noreferrer">Abrir ou baixar arquivo</a>}</> : <small>Esta atividade ainda não foi enviada por este aluno.</small>}</article>)}</div> : <p className="report-detail-empty">Nenhum aluno matriculado nesta turma.</p> : <p className="report-detail-empty">Selecione uma turma e uma atividade para consultar as entregas.</p>}
       </section>
     }
@@ -434,8 +513,9 @@ function DashboardProfessor() {
             <div className="role-date-time-fields"><label>Data de entrega<input type="date" name="dataPrazo" value={dataPrazo} min={dataAtualFormatadaISO.slice(0, 10)} onChange={(event) => setDataPrazo(event.target.value)} required /></label><label>Horário de entrega<input type="time" name="horaPrazo" value={horaPrazo} min={dataPrazo === dataAtualFormatadaISO.slice(0, 10) ? dataAtualFormatadaISO.slice(11, 16) : '00:00'} onChange={(event) => setHoraPrazo(event.target.value)} required /></label></div>
           </div><button className="role-primary-button" type="submit" disabled={creatingActivity}>{creatingActivity ? 'Publicando…' : '＋ Publicar atividade'}</button>
         </form> : <div className="role-empty-state"><span className="role-empty-icon">＋</span><strong>Crie uma turma para começar</strong><p>As atividades são vinculadas a uma turma. Cadastre uma turma antes de lançar tarefas.</p><button className="role-secondary-button" type="button" onClick={() => goToTab('turmas')}>Ir para Minhas Turmas</button></div>}
-        {activities.length > 0 && <div className="role-list role-activities-list"><div className="role-list-heading"><h3>Atividades lançadas</h3><span>{activities.length} no total</span></div>{activities.map((item) => <article className="role-list-item" key={item.id}><span className="role-card-icon role-icon-teal" aria-hidden="true">✎</span><div><strong>{item.title}</strong><small>{item.class_name}{item.due_date ? ` · Entrega: ${formatDatePtBr(item.due_date)}` : ' · Sem data de entrega'}</small></div><span className="role-badge">Publicada</span><button className="role-secondary-button" type="button" onClick={() => verEntregas(item)}>Ver Entregas</button></article>)}</div>}
-        {selectedAssignmentForSubmissions && <div className="student-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedAssignmentForSubmissions(null) }}><section className="student-performance-panel" role="dialog" aria-modal="true" aria-labelledby="assignment-submissions-title"><button className="student-modal-close" type="button" aria-label="Fechar entregas" onClick={() => setSelectedAssignmentForSubmissions(null)}>×</button><span className="role-kicker">ENTREGAS DA ATIVIDADE</span><h2 id="assignment-submissions-title">{selectedAssignmentForSubmissions.title}</h2>{submissionsLoading ? <p>Carregando entregas...</p> : submissionsError ? <p role="alert">{submissionsError}</p> : assignmentSubmissions.length ? <div className="teacher-submission-list">{assignmentSubmissions.map((submission) => <article className="teacher-submission-card" key={`${submission.assignment_id}-${submission.student_id}`}><strong>{submission.student?.name || 'Aluno'}</strong>{submission.student?.email && <small>{submission.student.email}</small>}<small>Entregue em {formatarDataAluno(submission.submitted_at)}</small>{submission.text_content && <p className="assignment-submission-text">{submission.text_content}</p>}{submission.external_link && <a href={submission.external_link} target="_blank" rel="noopener noreferrer">Abrir link enviado</a>}{submission.file_url && <a href={submission.file_url} target="_blank" rel="noopener noreferrer">Abrir ou baixar arquivo</a>}</article>)}</div> : <p>Nenhuma entrega cadastrada para esta atividade.</p>}</section></div>}
+        {activities.length > 0 && <div className="role-list role-activities-list"><div className="role-list-heading"><h3>Atividades lançadas</h3><span>{activities.length} no total</span></div>{activities.map((item) => <article className="role-list-item" key={item.id}><span className="role-card-icon role-icon-teal" aria-hidden="true">✎</span><div><strong>{item.title}</strong><small>{item.class_name}{item.due_date ? ` · Entrega: ${formatDatePtBr(item.due_date)}` : ' · Sem data de entrega'}</small></div><span className="role-badge">Publicada</span><div className="teacher-activity-actions"><button className="teacher-activity-button primary" type="button" onClick={() => verEntregas(item)}><ClipboardList size={16} aria-hidden="true" />Ver Entregas</button><button className="teacher-activity-button secondary" type="button" onClick={() => abrirEdicaoAtividade(item)}><Pencil size={15} aria-hidden="true" />Editar</button><button className="teacher-activity-button danger" type="button" disabled={deletingActivityId === item.id} onClick={() => excluirAtividade(item)}><Trash2 size={15} aria-hidden="true" />{deletingActivityId === item.id ? 'Excluindo...' : 'Excluir'}</button></div></article>)}</div>}
+        {editingActivity && <div className="student-modal-backdrop assignment-edit-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !savingActivityEdit) setEditingActivity(null) }}><section className="student-performance-panel assignment-edit-panel" role="dialog" aria-modal="true" aria-labelledby="edit-assignment-title"><button className="student-modal-close" type="button" aria-label="Fechar edição" disabled={savingActivityEdit} onClick={() => setEditingActivity(null)}><X size={18} /></button><span className="role-kicker">EDITAR ATIVIDADE</span><h2 id="edit-assignment-title">{editingActivity.title}</h2><form className="assignment-edit-form" onSubmit={salvarEdicaoAtividade}><label>Título<input value={editActivityTitle} onChange={(event) => setEditActivityTitle(event.target.value)} maxLength="180" required /></label><label>Instruções / Conteúdo<textarea value={editActivityDescription} onChange={(event) => setEditActivityDescription(event.target.value)} rows="5" /></label><div className="role-date-time-fields"><label>Data de entrega<input type="date" value={editActivityDate} onChange={(event) => setEditActivityDate(event.target.value)} /></label><label>Horário de entrega<input type="time" value={editActivityTime} onChange={(event) => setEditActivityTime(event.target.value)} /></label></div>{activityError && <p className="class-toast class-toast-error" role="alert">{activityError}</p>}<div className="teacher-activity-actions"><button className="teacher-activity-button secondary" type="button" disabled={savingActivityEdit} onClick={() => setEditingActivity(null)}>Cancelar</button><button className="teacher-activity-button primary" type="submit" disabled={savingActivityEdit}>{savingActivityEdit ? 'Salvando...' : 'Salvar alterações'}</button></div></form></section></div>}
+        {selectedAssignmentForSubmissions && <div className="student-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedAssignmentForSubmissions(null) }}><section className="student-performance-panel" role="dialog" aria-modal="true" aria-labelledby="assignment-submissions-title"><button className="student-modal-close" type="button" aria-label="Fechar entregas" onClick={() => setSelectedAssignmentForSubmissions(null)}>×</button><span className="role-kicker">ENTREGAS DA ATIVIDADE</span><h2 id="assignment-submissions-title">{selectedAssignmentForSubmissions.title}</h2>{submissionsLoading ? <p>Carregando entregas...</p> : submissionsError ? <p role="alert">{submissionsError}</p> : assignmentSubmissions.length ? <div className="teacher-submission-list">{assignmentSubmissions.map((submission) => <article className="teacher-submission-card" key={`${submission.assignment_id}-${submission.student_id}`}><strong>{submission.student?.name || 'Aluno'}</strong>{submission.student?.email && <small>{submission.student.email}</small>}<small>Entregue em {formatarDataAluno(submission.submitted_at)}</small>{submission.text_content && <p className="assignment-submission-text">{submission.text_content}</p>}{submission.external_link && <a href={submission.external_link} target="_blank" rel="noopener noreferrer">Abrir link enviado</a>}{submission.file_url && <a href={submission.file_url} target="_blank" rel="noopener noreferrer">Abrir ou baixar arquivo</a>}</article>)}</div> : <p>Nenhuma entrega encontrada para esta atividade.</p>}</section></div>}
       </section>
     }
 
