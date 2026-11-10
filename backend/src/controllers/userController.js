@@ -213,10 +213,16 @@ exports.verifyEmailOtp = async (req, res) => {
     return res.status(400).json({ message: 'Informe o e-mail e o código de 6 dígitos.' });
   }
   try {
-    const { data, error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: 'signup' });
+    let { data, error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: 'email' });
+    if (error && /invalid/i.test(error.message || '')) {
+      const secondaryAttempt = await supabase.auth.verifyOtp({ email, token: otpCode, type: 'signup' });
+      data = secondaryAttempt.data;
+      error = secondaryAttempt.error;
+    }
     if (error) {
       const limited = /rate.?limit|too many requests/i.test(`${error.code || ''} ${error.message || ''}`);
-      return res.status(limited ? 429 : 400).json({ message: error.message, code: error.code });
+      if (limited) return res.status(429).json({ message: error.message, code: error.code });
+      return res.status(400).json({ message: 'Código inválido ou expirado. Verifique os 6 dígitos.', code: error.code });
     }
     return res.status(200).json({ message: 'E-mail verificado com sucesso!', data });
   } catch {
