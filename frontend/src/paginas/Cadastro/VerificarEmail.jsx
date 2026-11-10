@@ -91,8 +91,16 @@ function VerificarEmail() {
 
           <form className="formulario-login" onSubmit={verificar}>
             <label className="rotulo-campo" htmlFor="codigo-confirmacao">CÓDIGO RECEBIDO POR E-MAIL</label>
-            <input
-              className="campo-login otp-input"
+            <div className="otp-slots-input">
+              <div className="otp-slots" aria-hidden="true">
+                {Array.from({ length: 8 }, (_, index) => (
+                  <span className={`otp-slot${codigo[index] ? ' otp-slot-filled' : ''}${codigo.length === index ? ' otp-slot-current' : ''}`} key={index}>
+                    {codigo[index] || ''}
+                  </span>
+                ))}
+              </div>
+              <input
+              className="otp-input"
               id="codigo-confirmacao"
               name="codigo"
               type="text"
@@ -100,12 +108,14 @@ function VerificarEmail() {
               autoComplete="one-time-code"
               pattern="[0-9]{6,8}"
               maxLength={8}
-              placeholder="Código de verificação"
+              autoFocus
               value={codigo}
               onChange={(event) => setCodigo(event.target.value.replace(/\D/g, '').slice(0, 8))}
               aria-describedby="otp-instrucao"
+              aria-label="Código de verificação recebido por e-mail"
               required
-            />
+              />
+            </div>
             <span id="otp-instrucao" className="otp-hint">Digite o código recebido por e-mail (até 8 dígitos).</span>
             <button type="submit" className="botao-entrar" disabled={verificando || codigo.length < 6 || codigo.length > 8 || !email}>
               {verificando ? 'Verificando...' : 'Verificar Código'}
