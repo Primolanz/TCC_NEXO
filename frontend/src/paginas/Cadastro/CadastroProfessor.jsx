@@ -46,7 +46,12 @@ function CadastroProfessor() {
       })
       const dados = await resposta.json().catch(() => ({}))
       if (!resposta.ok) {
-        definirErro(dados.message || dados.error || 'Dados inválidos. Verifique os campos e tente novamente.')
+        let errorMsg = dados.message || dados.error || 'Ocorreu um erro ao processar sua solicitação.'
+        const normalizedError = errorMsg.toLowerCase()
+        if (normalizedError.includes('error sending confirmation email') || normalizedError.includes('rate limit')) {
+          errorMsg = 'Limite de e-mails atingido. Tente novamente mais tarde ou entre em contato com o suporte.'
+        }
+        definirErro(errorMsg)
         return
       }
 
