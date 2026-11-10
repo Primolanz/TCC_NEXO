@@ -6,30 +6,34 @@ exports.registerUser = async (req, res) => {
   const normalizedRole = String(role).toUpperCase();
 
   if (!name || !email || !password) {
-    return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios.' });
+    return res.status(400).json({ error: 'Nome, e-mail e senha sÃ£o obrigatÃ³rios.' });
   }
 
   try {
     // Cadastra credenciais no Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    let authData;
+    let authError;
+    try {
+      ({ data: authData, error: authError } = await supabase.auth.signUp({ email, password }));
+    } catch (error) {
+      console.error('[Cadastro] Supabase Auth indisponÃ­vel:', error.message);
+      return res.status(502).json({ error: 'NÃ£o foi possÃ­vel criar a conta no serviÃ§o de autenticaÃ§Ã£o. Tente novamente.' });
+    }
 
     if (authError) {
       const authErrorText = `${authError.code || ''} ${authError.message || ''}`;
       const emailAlreadyExists = /already[_ ]?(?:registered|exists)|user[_ ]already[_ ]exists|email[_ ]exists|email.*taken/i.test(authErrorText);
       return res.status(emailAlreadyExists ? 409 : 400).json({
-        error: emailAlreadyExists ? 'E-mail já cadastrado. Tente entrar ou use outro e-mail.' : authError.message,
+        error: emailAlreadyExists ? 'E-mail jÃ¡ cadastrado. Tente entrar ou use outro e-mail.' : authError.message,
       });
     }
 
     const authUser = authData?.user;
     if (!authUser?.id || (Array.isArray(authUser.identities) && authUser.identities.length === 0)) {
-      return res.status(409).json({ error: 'E-mail já cadastrado. Tente entrar ou use outro e-mail.' });
+      return res.status(409).json({ error: 'E-mail jÃ¡ cadastrado. Tente entrar ou use outro e-mail.' });
     }
 
-    // Insere perfil na tabela pública 'users'
+    // Insere perfil na tabela pÃºblica 'users'
     const { data: userData, error: userError } = await supabase
       .from('users')
       .insert([
@@ -45,14 +49,18 @@ exports.registerUser = async (req, res) => {
       .select();
 
     if (userError) {
-      console.error('[Cadastro] Falha ao criar perfil vinculado ao usuário Auth:', userError.message);
-      return res.status(500).json({ error: 'A conta foi criada, mas não foi possível salvar o perfil. Entre em contato com o suporte.' });
+      console.error('[Cadastro] Falha ao criar perfil vinculado ao usuÃ¡rio Auth:', userError.message);
+      const duplicateKey = userError.code === '23505';
+      return res.status(duplicateKey ? 409 : 500).json({
+        error: duplicateKey ? 'Já existe um perfil com um dos dados informados. Confira seu e-mail e tente novamente.' : 'A conta foi criada, mas não foi possível salvar o perfil. Tente novamente ou entre em contato com o suporte.',
+        code: userError.code || 'PROFILE_INSERT_FAILED',
+      });
     }
 
     return res.status(201).json({
       message: normalizedRole === 'TEACHER'
-        ? 'Conta criada com sucesso. Seu cadastro de professor está pendente de aprovação pelo administrador.'
-        : 'Usuário cadastrado com sucesso!',
+        ? 'Conta criada com sucesso. Seu cadastro de professor estÃ¡ pendente de aprovaÃ§Ã£o pelo administrador.'
+        : 'UsuÃ¡rio cadastrado com sucesso!',
       user: userData[0],
       session: normalizedRole !== 'TEACHER' && authData.session ? {
         access_token: authData.session.access_token,
@@ -60,7 +68,7 @@ exports.registerUser = async (req, res) => {
       } : null
     });
   } catch (error) {
-    return res.status(500).json({ error: 'Erro interno ao cadastrar usuário.' });
+    return res.status(500).json({ error: 'Erro interno ao cadastrar usuÃ¡rio.' });
   }
 };
 
@@ -69,16 +77,16 @@ exports.registerUser = async (req, res) => {
 
 exports.refreshSession = async (req, res) => {
   const { refresh_token: refreshToken } = req.body;
-  if (!refreshToken) return res.status(400).json({ error: 'Refresh token não fornecido.' });
+  if (!refreshToken) return res.status(400).json({ error: 'Refresh token nÃ£o fornecido.' });
   try {
     const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
-    if (error || !data.session) return res.status(401).json({ error: 'Sessão expirada. Faça login novamente.' });
+    if (error || !data.session) return res.status(401).json({ error: 'SessÃ£o expirada. FaÃ§a login novamente.' });
     return res.status(200).json({ session: {
       access_token: data.session.access_token,
       refresh_token: data.session.refresh_token,
     } });
   } catch {
-    return res.status(500).json({ error: 'Não foi possível renovar a sessão.' });
+    return res.status(500).json({ error: 'NÃ£o foi possÃ­vel renovar a sessÃ£o.' });
   }
 };
 
@@ -91,7 +99,7 @@ exports.loginUser = async (req, res) => {
     const { password } = req.body || {};
     const email = requestedEmail;
     if (!email || !password) {
-      return res.status(400).json({ message: 'E-mail e senha são obrigatórios.' });
+      return res.status(400).json({ message: 'E-mail e senha sÃ£o obrigatÃ³rios.' });
     }
 
     let matchingProfileFound = null;
@@ -102,11 +110,11 @@ exports.loginUser = async (req, res) => {
         .ilike('email', email)
         .maybeSingle();
       if (lookupError) {
-        console.error('[Login][dev] Erro exato na consulta case-insensitive de usuário:', lookupError);
+        console.error('[Login][dev] Erro exato na consulta case-insensitive de usuÃ¡rio:', lookupError);
       } else {
         matchingProfileFound = Boolean(matchingProfile);
         if (!matchingProfileFound) {
-          console.log('Utilizador não encontrado no Supabase:', email);
+          console.log('Utilizador nÃ£o encontrado no Supabase:', email);
         }
       }
     }
@@ -121,10 +129,10 @@ exports.loginUser = async (req, res) => {
       if (isEmailRateLimitError(authError)) return res.status(429).json({ error: friendlyAuthError(authError) });
       if (matchingProfileFound) console.log('Senha incorreta para:', email);
       if (process.env.NODE_ENV !== 'production') console.error('[Login][dev] Erro exato retornado pelo Supabase Auth:', authError);
-      return res.status(400).json({ message: 'Credenciais inválidas.' });
+      return res.status(400).json({ message: 'Credenciais invÃ¡lidas.' });
     }
 
-    // 2. Busca o perfil completo na tabela pública 'users'
+    // 2. Busca o perfil completo na tabela pÃºblica 'users'
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('*')
@@ -133,10 +141,10 @@ exports.loginUser = async (req, res) => {
 
     if (userError) {
       if (userError.code === 'PGRST116') {
-        console.log('Utilizador não encontrado no Supabase:', email);
-        return res.status(404).json({ message: 'Perfil de usuário não encontrado.' });
+        console.log('Utilizador nÃ£o encontrado no Supabase:', email);
+        return res.status(404).json({ message: 'Perfil de usuÃ¡rio nÃ£o encontrado.' });
       }
-      console.error('[Login] Falha ao consultar o perfil público após autenticação:', {
+      console.error('[Login] Falha ao consultar o perfil pÃºblico apÃ³s autenticaÃ§Ã£o:', {
         email: requestedEmail,
         code: userError.code,
         message: userError.message,
@@ -145,16 +153,16 @@ exports.loginUser = async (req, res) => {
     }
 
     if (!userData) {
-      console.error('[Login] Usuário autenticado sem perfil correspondente na tabela users:', { email: requestedEmail });
-      return res.status(404).json({ message: 'Perfil de usuário não encontrado.' });
+      console.error('[Login] UsuÃ¡rio autenticado sem perfil correspondente na tabela users:', { email: requestedEmail });
+      return res.status(404).json({ message: 'Perfil de usuÃ¡rio nÃ£o encontrado.' });
     }
 
     if (userData.role === 'TEACHER' && userData.status_approval !== 'APPROVED') {
       const rejected = userData.status_approval === 'REJECTED';
       return res.status(403).json({
         error: rejected
-          ? 'O acesso à sua conta de professor foi recusado pelo administrador.'
-          : 'Sua conta de professor ainda está em análise pelo administrador.',
+          ? 'O acesso Ã  sua conta de professor foi recusado pelo administrador.'
+          : 'Sua conta de professor ainda estÃ¡ em anÃ¡lise pelo administrador.',
         code: rejected ? 'TEACHER_REJECTED' : 'TEACHER_PENDING',
       });
     }
@@ -186,7 +194,7 @@ exports.loginUser = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('[Login] Erro interno durante autenticação:', error.message);
+    console.error('[Login] Erro interno durante autenticaÃ§Ã£o:', error.message);
     if (res.headersSent) return;
     return res.status(500).json({ message: 'Erro interno no servidor ao realizar login.' });
   }
@@ -202,7 +210,7 @@ exports.getMyProfile = async (req, res) => {
     ]);
     if (userError) throw userError;
     if (diagnosticError) throw diagnosticError;
-    if (!user) return res.status(404).json({ error: 'Perfil de usuário não encontrado.' });
+    if (!user) return res.status(404).json({ error: 'Perfil de usuÃ¡rio nÃ£o encontrado.' });
     const hasProfile = Boolean(user.age_group && user.occupation && user.main_goal);
     const hasInitialDiagnostic = Boolean(diagnostic);
     return res.json({ user: {
@@ -217,7 +225,7 @@ exports.getMyProfile = async (req, res) => {
   }
 };
 
-// Atualizar perfil do Onboarding (Idade, Ocupação e Objetivos)
+// Atualizar perfil do Onboarding (Idade, OcupaÃ§Ã£o e Objetivos)
 exports.updateOnboarding = async (req, res) => {
   try {
     const userId = req.user.id; // Obtido do authMiddleware
@@ -256,7 +264,7 @@ exports.subscribePremium = async (req, res) => {
     const { data: profile, error: profileError } = await supabase
       .from('users').select('id, role').eq('id', userId).maybeSingle();
     if (profileError) throw profileError;
-    if (!profile) return res.status(404).json({ error: 'Perfil de usuário não encontrado.' });
+    if (!profile) return res.status(404).json({ error: 'Perfil de usuÃ¡rio nÃ£o encontrado.' });
     if (profile.role !== 'STUDENT') return res.status(403).json({ error: 'Apenas alunos podem assinar o plano Premium.' });
 
     const { data: user, error: updateError } = await supabase

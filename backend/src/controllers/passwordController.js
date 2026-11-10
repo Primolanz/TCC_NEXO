@@ -7,8 +7,7 @@ exports.requestReset = async (req, res) => {
   if (!email) return res.status(400).json({ error: 'Informe seu e-mail.' });
 
   try {
-    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
-    const redirectTo = `${frontendUrl}/reset-password`;
+    const redirectTo = 'https://nexo-educacao.netlify.app/redefinir-senha';
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
     if (error) {
       console.error('[Senha] Supabase resetPasswordForEmail falhou:', error.message);

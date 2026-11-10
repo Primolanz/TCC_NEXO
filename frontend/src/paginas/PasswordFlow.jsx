@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import CabecalhoPagina from '../componentes/CabecalhoPagina.jsx'
-import { clearSession } from '../servicos/apiClient.js'
+import { apiClient, clearSession } from '../servicos/apiClient.js'
 import '../paginasCSS/PasswordFlow.css'
 
 function recoveryTokens() {
@@ -25,7 +25,7 @@ export function ForgotPassword() {
     setMessage('')
     setBusy(true)
     try {
-      const response = await fetch('http://localhost:3000/api/users/password/recovery', {
+      const response = await apiClient('/users/password/recovery', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
