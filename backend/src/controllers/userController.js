@@ -209,8 +209,8 @@ exports.login = exports.loginUser;
 exports.verifyEmailOtp = async (req, res) => {
   const email = String(req.body?.email || '').trim().toLowerCase();
   const otpCode = String(req.body?.otpCode || req.body?.token || '').trim();
-  if (!email || !/^\d{6}$/.test(otpCode)) {
-    return res.status(400).json({ message: 'Informe o e-mail e o código de 6 dígitos.' });
+  if (!email || !/^\d{6,8}$/.test(otpCode)) {
+    return res.status(400).json({ message: 'Informe o e-mail e um código válido de até 8 dígitos.' });
   }
   try {
     let { data, error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: 'email' });
@@ -222,7 +222,7 @@ exports.verifyEmailOtp = async (req, res) => {
     if (error) {
       const limited = /rate.?limit|too many requests/i.test(`${error.code || ''} ${error.message || ''}`);
       if (limited) return res.status(429).json({ message: error.message, code: error.code });
-      return res.status(400).json({ message: 'Código inválido ou expirado. Verifique os 6 dígitos.', code: error.code });
+      return res.status(400).json({ message: 'Código inválido ou expirado. Verifique o código recebido por e-mail.', code: error.code });
     }
     return res.status(200).json({ message: 'E-mail verificado com sucesso!', data });
   } catch {

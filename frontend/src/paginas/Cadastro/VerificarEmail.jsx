@@ -81,7 +81,7 @@ function VerificarEmail() {
         <section className="cartao-login otp-card" aria-labelledby="titulo-verificar-email">
           <span className="otp-icon" aria-hidden="true">✉</span>
           <h1 id="titulo-verificar-email" className="titulo-login">Confirme seu E-mail</h1>
-          <p className="descricao-login">Enviamos um código de 6 dígitos para <strong>{email || 'o e-mail informado'}</strong>.</p>
+          <p className="descricao-login">Enviamos um código de verificação para <strong>{email || 'o e-mail informado'}</strong>.</p>
 
           <div className="otp-warning" role="note">
             <strong>Atenção à caixa de SPAM:</strong> O e-mail de confirmação pode levar alguns instantes para chegar e frequentemente vai para a pasta de <strong>Lixo Eletrônico / SPAM</strong>. Verifique-a antes de reenviar.
@@ -90,7 +90,7 @@ function VerificarEmail() {
           {erro && <div className="otp-error" role="alert">{erro}</div>}
 
           <form className="formulario-login" onSubmit={verificar}>
-            <label className="rotulo-campo" htmlFor="codigo-confirmacao">CÓDIGO DE VERIFICAÇÃO</label>
+            <label className="rotulo-campo" htmlFor="codigo-confirmacao">CÓDIGO RECEBIDO POR E-MAIL</label>
             <input
               className="campo-login otp-input"
               id="codigo-confirmacao"
@@ -98,16 +98,16 @@ function VerificarEmail() {
               type="text"
               inputMode="numeric"
               autoComplete="one-time-code"
-              pattern="[0-9]{6}"
-              maxLength={6}
-              placeholder="000000"
+              pattern="[0-9]{6,8}"
+              maxLength={8}
+              placeholder="Código de verificação"
               value={codigo}
-              onChange={(event) => setCodigo(event.target.value.replace(/\D/g, '').slice(0, 6))}
+              onChange={(event) => setCodigo(event.target.value.replace(/\D/g, '').slice(0, 8))}
               aria-describedby="otp-instrucao"
               required
             />
-            <span id="otp-instrucao" className="otp-hint">Digite os seis números recebidos por e-mail.</span>
-            <button type="submit" className="botao-entrar" disabled={verificando || codigo.length !== 6 || !email}>
+            <span id="otp-instrucao" className="otp-hint">Digite o código recebido por e-mail (até 8 dígitos).</span>
+            <button type="submit" className="botao-entrar" disabled={verificando || codigo.length < 6 || codigo.length > 8 || !email}>
               {verificando ? 'Verificando...' : 'Verificar Código'}
             </button>
           </form>
