@@ -4,7 +4,7 @@ import "../../paginasCSS/Login.css";
 import CabecalhoPagina from "../../componentes/CabecalhoPagina.jsx";
 import CampoSenha from "../../componentes/CampoSenha.jsx";
 import { saveSession } from "../../servicos/apiClient.js";
-import { friendlyAuthMessage, readAuthResponse } from "../../servicos/authErrors.js";
+import { friendlyAuthMessage } from "../../servicos/authErrors.js";
 
 const toTitleCase = (str) => {
   const preposicoes = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
@@ -54,7 +54,11 @@ function CadastroAluno() {
         }),
       });
 
-      const dados = await readAuthResponse(resposta);
+      const dados = await resposta.json().catch(() => ({}));
+      if (!resposta.ok) {
+        definirErro(dados.message || dados.error || "Dados inválidos. Verifique os campos e tente novamente.");
+        return;
+      }
 
       // 2. Se a API já retornar um token JWT no cadastro, salvamos a sessão
       const tokenRecebido =
