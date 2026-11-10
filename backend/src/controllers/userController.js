@@ -208,19 +208,19 @@ exports.login = exports.loginUser;
 
 exports.verifyEmailOtp = async (req, res) => {
   const email = String(req.body?.email || '').trim().toLowerCase();
-  const token = String(req.body?.token || '').trim();
-  if (!email || !/^\d{6}$/.test(token)) {
-    return res.status(400).json({ error: 'Informe o e-mail e o código de 6 dígitos.' });
+  const otpCode = String(req.body?.otpCode || req.body?.token || '').trim();
+  if (!email || !/^\d{6}$/.test(otpCode)) {
+    return res.status(400).json({ message: 'Informe o e-mail e o código de 6 dígitos.' });
   }
   try {
-    const { data, error } = await supabase.auth.verifyOtp({ email, token, type: 'signup' });
+    const { data, error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: 'signup' });
     if (error) {
       const limited = /rate.?limit|too many requests/i.test(`${error.code || ''} ${error.message || ''}`);
-      return res.status(limited ? 429 : 400).json({ error: error.message, code: error.code });
+      return res.status(limited ? 429 : 400).json({ message: error.message, code: error.code });
     }
-    return res.status(200).json({ verified: true, user: data.user });
+    return res.status(200).json({ message: 'E-mail verificado com sucesso!', data });
   } catch {
-    return res.status(500).json({ error: 'Não foi possível confirmar o e-mail.' });
+    return res.status(500).json({ message: 'Não foi possível confirmar o e-mail.' });
   }
 };
 

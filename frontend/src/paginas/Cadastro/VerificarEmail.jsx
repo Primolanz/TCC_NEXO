@@ -33,13 +33,23 @@ function VerificarEmail() {
       const response = await apiClient('/users/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, token: codigo, type: 'signup' }),
+        body: JSON.stringify({ email, otpCode: codigo }),
       })
-      await readAuthResponse(response)
+      let payload = {}
+      try { payload = await response.json() } catch { /* Use a friendly fallback if the API response is unreadable. */ }
+      if (!response.ok) {
+        const apiMessage = payload.message || payload.error
+        if (apiMessage) {
+          const apiError = new Error(apiMessage)
+          apiError.isApiMessage = true
+          throw apiError
+        }
+        throw new Error(friendlyAuthMessage(null, { status: response.status }))
+      }
       clearSession()
       navigate('/login', { replace: true, state: { successMessage: 'Conta confirmada com sucesso! Faça login para continuar' } })
     } catch (error) {
-      setErro(friendlyAuthMessage(error))
+      setErro(error.isApiMessage ? error.message : friendlyAuthMessage(error))
     } finally {
       setVerificando(false)
     }
