@@ -86,10 +86,10 @@ exports.setTeacherApproval = async (req, res) => {
       .maybeSingle();
 
     if (error) throw error;
-    if (!data) return res.status(404).json({ error: 'Solicitação pendente não encontrada.' });
+    if (!data) return res.status(409).json({ error: 'A solicitação não está mais pendente. Atualize a lista e tente novamente.' });
     return res.json({ message: status === 'APPROVED' ? 'Professor aprovado com sucesso.' : 'Cadastro do professor rejeitado.', user: data });
   } catch (error) {
-    console.error('[Admin] Falha ao atualizar aprovação:', error.message);
-    return res.status(500).json({ error: 'Não foi possível atualizar a solicitação.' });
+    console.error('[Admin] Falha ao atualizar aprovação:', error.message, error.code || '');
+    return res.status(500).json({ error: error.message || 'Não foi possível atualizar a solicitação.' });
   }
 };

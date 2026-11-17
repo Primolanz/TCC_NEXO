@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Bot, BookOpen, ChartNoAxesCombined, ClipboardList, GraduationCap, LayoutDashboard, Menu, UsersRound, X } from 'lucide-react'
+import { ArrowLeft, Bot, BookOpen, ChartNoAxesCombined, ClipboardList, GraduationCap, LayoutDashboard, UsersRound } from 'lucide-react'
 import { apiClient } from '../servicos/apiClient.js'
 import '../paginasCSS/DashboardAluno.css'
 import CheckoutPremiumModal from '../componentes/CheckoutPremiumModal.jsx'
 import MenuPerfil from '../componentes/MenuPerfil.jsx'
-import ThemeToggle from '../componentes/ThemeToggle.jsx'
 import MarcaNexo from '../componentes/MarcaNexo.jsx'
 import TutorNexo from '../componentes/TutorNexo.jsx'
 
@@ -210,7 +209,6 @@ function DashboardAluno() {
   const [planoDiaSelecionado, setPlanoDiaSelecionado] = useState(null)
   const location = useLocation()
   const [abaAtiva, setAbaAtiva] = useState(() => location.state?.openTab || 'inicio')
-  const [menuMobileAberto, setMenuMobileAberto] = useState(false)
   const [checkoutPremiumOpen, setCheckoutPremiumOpen] = useState(false)
   const navegar = useNavigate()
   const areaPrincipalRef = useRef(null)
@@ -365,7 +363,6 @@ function DashboardAluno() {
 
   function abrirAba(aba) {
     setAbaAtiva(aba)
-    setMenuMobileAberto(false)
     if (aba === 'tutor') {
       setCarregandoAtividades(true)
       carregarAtividades().catch((error) => setErroAtividades(error.message)).finally(() => setCarregandoAtividades(false))
@@ -520,8 +517,7 @@ function DashboardAluno() {
 
   return (
     <main className="dashboard-aluno animate-fade-in">
-      {menuMobileAberto && <button className="dashboard-mobile-overlay" type="button" aria-label="Fechar menu" onClick={() => setMenuMobileAberto(false)} />}
-      <aside className={`dashboard-sidebar ${menuMobileAberto ? 'mobile-drawer-open' : ''}`}>
+      <aside className="dashboard-sidebar">
         <Link className="dashboard-logo" to="/inicio" aria-label="NEXO início"><MarcaNexo variant="sidebar" /></Link>
         <nav aria-label="Navegação do aluno">
           {ABAS.map((aba) => (
@@ -544,9 +540,7 @@ function DashboardAluno() {
             <MarcaNexo variant="header" />
             <span><small>ESPAÇO NEXO</small><strong>Área do aluno</strong></span>
           </div>
-          <MenuPerfil user={dados.user} role="STUDENT" />
-          <ThemeToggle />
-          <button className="dashboard-mobile-menu-button" type="button" aria-label={menuMobileAberto ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuMobileAberto} onClick={() => setMenuMobileAberto((open) => !open)}>{menuMobileAberto ? <X size={21} /> : <Menu size={21} />}</button>
+          <MenuPerfil user={dados.user} role="STUDENT" navigation={ABAS.map(({ id, label, icon }) => ({ id, title: label, icon }))} onNavigate={abrirAba} />
         </header>
         <section className="dashboard-conteudo">
           {abaAtiva === 'tutor' && <TutorNexo isPremium={!planoFree} context={contextoTutor} onPremium={() => setCheckoutPremiumOpen(true)} />}

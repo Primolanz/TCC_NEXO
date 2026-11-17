@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Menu, Moon, Sun, X } from 'lucide-react'
 import { apiClient, clearSession } from '../servicos/apiClient.js'
+import { useTheme } from '../context/ThemeContext.jsx'
 import '../paginasCSS/MenuPerfil.css'
 
 const labelRole = (user = {}) => {
@@ -16,7 +18,7 @@ function formatarData(value) {
   return Number.isNaN(date.getTime()) ? 'Data não informada' : new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(date)
 }
 
-export default function MenuPerfil({ user = {}, role: roleProp = 'STUDENT' }) {
+export default function MenuPerfil({ user = {}, role: roleProp = 'STUDENT', navigation = [], onNavigate }) {
   const [open, setOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [profile, setProfile] = useState(user)
@@ -29,6 +31,7 @@ export default function MenuPerfil({ user = {}, role: roleProp = 'STUDENT' }) {
   const [passwordError, setPasswordError] = useState('')
   const menuRef = useRef(null)
   const navigate = useNavigate()
+  const { theme, toggleTheme } = useTheme()
   const role = String(profile.role || user.role || roleProp).toUpperCase()
   const loginPath = role === 'TEACHER' ? '/login/professor' : role === 'ADMIN' ? '/login/administrador' : '/login'
   const initial = String(profile.name || user.name || profile.email || user.email || '?').trim().charAt(0).toLocaleUpperCase('pt-BR')
@@ -108,9 +111,14 @@ export default function MenuPerfil({ user = {}, role: roleProp = 'STUDENT' }) {
   }
 
   return <div className="menu-perfil" ref={menuRef}>
-    <button className="menu-perfil-avatar" type="button" aria-label="Abrir menu do perfil" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((value) => !value)}>{initial}</button>
+    <button className="menu-perfil-trigger" type="button" aria-label={open ? 'Fechar menu da conta' : 'Abrir menu da conta'} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((value) => !value)}>{open ? <X size={21} /> : <Menu size={21} />}</button>
     {open && <div className="menu-perfil-dropdown" role="menu">
-      <div className="menu-perfil-identidade"><strong>{user.name || user.email || 'Minha conta'}</strong><small>{labelRole(user)}</small></div>
+      <div className="menu-perfil-identidade">
+        <span className="menu-perfil-avatar" aria-hidden="true">{initial}</span>
+        <span className="menu-perfil-user-copy"><strong>{user.name || user.email || 'Minha conta'}</strong><small>{user.email || ''}</small><span className="menu-perfil-role">{labelRole(user)}</span></span>
+      </div>
+      {navigation.length > 0 && <nav className="menu-perfil-navigation" aria-label="Navegação do painel">{navigation.map((item) => <button key={item.id || item.title} type="button" role="menuitem" onClick={() => { onNavigate?.(item.id); setOpen(false) }}>{item.icon && <span aria-hidden="true">{item.icon}</span>}{item.title || item.label}</button>)}</nav>}
+      <button type="button" role="menuitem" className="menu-perfil-theme" onClick={toggleTheme}>{theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}<span>{theme === 'dark' ? 'Tema Claro' : 'Tema Escuro'}</span></button>
       <button type="button" role="menuitem" onClick={openProfile}>Meu Perfil</button>
       <button type="button" role="menuitem" className="menu-perfil-logout" onClick={logout}>Sair (Logout)</button>
     </div>}

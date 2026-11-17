@@ -14,8 +14,10 @@ function DashboardAdmin() {
   const [overview, setOverview] = useState({ metrics: {}, pendingTeachers: [], users: [], activityFeed: [] })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [search, setSearch] = useState('')
   const [updatingId, setUpdatingId] = useState('')
+  const [updatingStatus, setUpdatingStatus] = useState('')
   const [selectedUser, setSelectedUser] = useState(null)
 
   useEffect(() => {
@@ -33,7 +35,9 @@ function DashboardAdmin() {
 
   async function decideTeacher(id, status) {
     setUpdatingId(id)
+    setUpdatingStatus(status)
     setError('')
+    setSuccess('')
     try {
       const response = await apiClient(`/admin/teachers/${encodeURIComponent(id)}/approval`, {
         method: 'PATCH',
@@ -45,16 +49,18 @@ function DashboardAdmin() {
       setOverview((current) => ({
         metrics: {
           ...current.metrics,
-          pendingTeachers: Math.max(0, current.metrics.pendingTeachers - 1),
-          approvedTeachers: current.metrics.approvedTeachers + (status === 'APPROVED' ? 1 : 0),
+          pendingTeachers: Math.max(0, (current.metrics.pendingTeachers || 0) - 1),
+          approvedTeachers: (current.metrics.approvedTeachers || 0) + (status === 'APPROVED' ? 1 : 0),
         },
         pendingTeachers: current.pendingTeachers.filter((teacher) => teacher.id !== id),
         users: current.users.map((user) => user.id === id ? body.user : user),
       }))
+      setSuccess(status === 'APPROVED' ? 'Professor aprovado com sucesso!' : 'Solicitação rejeitada.')
     } catch (requestError) {
       setError(requestError.message)
     } finally {
       setUpdatingId('')
+      setUpdatingStatus('')
     }
   }
 
@@ -123,8 +129,8 @@ function DashboardAdmin() {
           <div className="admin-teacher-info"><strong>{teacher.name || 'Nome não informado'}</strong><span>{teacher.email}</span><small>Solicitação recebida {teacher.created_at ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' }).format(new Date(teacher.created_at)) : ''}</small></div>
           <span className="admin-pending-badge">Em análise</span>
           <div className="admin-teacher-actions">
-            <button type="button" className="admin-approve-button" disabled={updatingId === teacher.id} onClick={() => decideTeacher(teacher.id, 'APPROVED')}>{updatingId === teacher.id ? 'Salvando…' : 'Aprovar'}</button>
-            <button type="button" className="admin-reject-button" disabled={updatingId === teacher.id} onClick={() => decideTeacher(teacher.id, 'REJECTED')}>Rejeitar</button>
+            <button type="button" className="admin-approve-button" disabled={updatingId === teacher.id} onClick={() => decideTeacher(teacher.id, 'APPROVED')}>{updatingId === teacher.id && updatingStatus === 'APPROVED' ? 'Salvando…' : 'Aprovar'}</button>
+            <button type="button" className="admin-reject-button" disabled={updatingId === teacher.id} onClick={() => decideTeacher(teacher.id, 'REJECTED')}>{updatingId === teacher.id && updatingStatus === 'REJECTED' ? 'Salvando…' : 'Rejeitar'}</button>
           </div>
         </article>)}
       </div> : <div className="role-empty-state"><span className="role-empty-icon">✓</span><strong>Tudo em dia</strong><p>Não há solicitações pendentes de aprovação.</p></div>}
@@ -182,6 +188,7 @@ function DashboardAdmin() {
       renderContent={renderContent}
     />
     {error && <div className="admin-toast" role="alert"><span>{error}</span><button type="button" onClick={() => setError('')} aria-label="Fechar mensagem">×</button></div>}
+    {success && <div className="admin-toast admin-toast-success" role="status"><span>{success}</span><button type="button" onClick={() => setSuccess('')} aria-label="Fechar mensagem">×</button></div>}
   </>
 }
 
