@@ -19,7 +19,7 @@ const diagnosticFormsRoutes = require('./routes/diagnosticFormsRoutes');
 
 // 2. Inicialização do App
 const app = express();
-const rawFrontendUrl = process.env.FRONTEND_URL || 'https://nexo-educacao.netlify.app';
+const rawFrontendUrl = process.env.FRONTEND_URL || '';
 const cleanFrontendUrl = rawFrontendUrl
   .replace(/^['"\[]+|['"\]]+$/g, '')
   .split('](')[0]
@@ -27,15 +27,20 @@ const cleanFrontendUrl = rawFrontendUrl
   .replace(/\/+$/, '');
 
 // 3. Middlewares Globais
-app.use(cors({
-  origin: [
-    cleanFrontendUrl,
-    'http://localhost:5173',
-    'http://localhost:3000'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true
-}));
+const allowedOrigins = [...new Set([
+  'https://nexo-educa.netlify.app',
+  cleanFrontendUrl,
+  'http://localhost:5173',
+  'http://localhost:3000',
+].filter(Boolean))];
+const corsOptions = {
+  origin: allowedOrigins,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+};
+app.options(/.*/, cors(corsOptions));
+app.use(cors(corsOptions));
 
 app.use(express.json());
 
