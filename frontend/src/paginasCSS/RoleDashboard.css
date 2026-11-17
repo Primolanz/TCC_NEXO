@@ -63,6 +63,9 @@
 .submissions-filters { margin-bottom: 20px; }
 .teacher-class-submissions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .teacher-submission-card.submission-pending { border-color: #514650; }
+.teacher-submission-card.submission-pending { display: flex; height: fit-content; min-height: 0; flex-direction: column; align-items: flex-start; justify-content: flex-start; align-self: start; gap: 4px; }
+.teacher-submission-card.submission-pending > strong { margin-bottom: -1px; }
+.teacher-submission-card .role-badge { display: inline-flex; width: fit-content; height: fit-content; min-height: 0; flex: 0 0 auto; align-items: center; align-self: flex-start; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
 .role-badge.submission-received { border-color: #28624f; color: #a8e9ca; background: #142b24; }
 .role-badge.submission-missing { border-color: #66572f; color: #f1d89d; background: #302817; }
 .role-date-selects select { min-width: 0; min-height: 43px; padding: 8px 9px; border: 1px solid #3d304a; border-radius: 8px; outline: none; color: #f5edff; background: #0d0b10; font-size: 12px; }
@@ -250,7 +253,7 @@
 .role-dashboard-admin .admin-user-action { border-color: #60417e; color: #e6d5fa; background: #281d35; }
 .role-dashboard-admin .admin-user-action:hover { border-color: #9b65d0; color: #fff; background: #38224e; }
 .role-dashboard-admin .admin-loading { padding: 60px 20px; color: #cdb7e5; text-align: center; }
-.admin-toast { position: fixed; z-index: 1300; right: 24px; bottom: 24px; display: flex; max-width: min(520px, calc(100vw - 32px)); align-items: center; gap: 16px; padding: 13px 15px; border: 1px solid #98474c; border-radius: 11px; color: #ffc1bc; background: #28171c; box-shadow: 0 15px 40px #0008; font-size: 12px; }
+.admin-toast { position: fixed; z-index: 50; top: 5rem; right: 1.5rem; display: flex; max-width: min(520px, calc(100vw - 32px)); align-items: center; gap: 16px; padding: 13px 15px; border: 1px solid #98474c; border-radius: 11px; color: #ffc1bc; background: #28171c; box-shadow: 0 15px 40px #0008; font-size: 12px; }
 .admin-toast button { border: 0; color: #ffc1bc; background: transparent; font-size: 20px; }
 .admin-toast.admin-toast-success { border-color: #387967; color: #b2f0d5; background: #17352e; }
 .admin-toast.admin-toast-success button { color: #b2f0d5; }
