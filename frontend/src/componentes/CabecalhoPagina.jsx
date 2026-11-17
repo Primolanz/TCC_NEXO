@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import imagemLogoNexo from '../assets/NEXO_LOGO-sem-fundo.png'
+import ThemeToggle from './ThemeToggle.jsx'
 import '../componentesCSS/CabecalhoPagina.css'
 
 function CabecalhoPagina({ nomePagina, showBack = true }) {
@@ -13,6 +14,7 @@ function CabecalhoPagina({ nomePagina, showBack = true }) {
         <img className="imagem-logo-cabecalho" src={imagemLogoNexo} alt="NEXO" />
       </Link>
       <p className="nome-pagina-cabecalho">{nomePagina}</p>
+      <ThemeToggle />
     </header>
   )
 }

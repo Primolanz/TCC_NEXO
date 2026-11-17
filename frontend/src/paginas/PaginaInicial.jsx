@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import imagemLogoNexo from '../assets/NEXO_LOGO-sem-fundo.png'
 import { apiClient } from '../servicos/apiClient.js'
+import ThemeToggle from '../componentes/ThemeToggle.jsx'
 import '../paginasCSS/PaginaInicial.css'
 
 const links = [['#sobre', 'Sobre a NEXO'], ['#para-professores', 'Para Professores'], ['#para-alunos', 'Para Alunos'], ['#como-funciona', 'Como Funciona']]
@@ -37,7 +38,7 @@ function PaginaInicial() {
       <header className="cabecalho-inicial">
         <Link className="logo-inicial" to="/" aria-label="NEXO: página inicial"><img className="imagem-logo-inicial" src={imagemLogoNexo} alt="NEXO" /></Link>
         <nav className={`navegacao-inicial${menuAberto ? ' navegacao-inicial-aberta' : ''}`} aria-label="Navegação principal">{links.map(([href, label]) => <a key={href} href={href} onClick={() => setMenuAberto(false)}>{label}</a>)}</nav>
-        <div className="acoes-cabecalho-inicial"><Link className="botao-login-inicial" to="/login">Login</Link><button className="botao-menu-inicial" type="button" aria-label={menuAberto ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuAberto} onClick={() => setMenuAberto((aberto) => !aberto)}><span aria-hidden="true">{menuAberto ? '×' : '☰'}</span></button></div>
+        <div className="acoes-cabecalho-inicial"><ThemeToggle /><Link className="botao-login-inicial" to="/login">Login</Link><button className="botao-menu-inicial" type="button" aria-label={menuAberto ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuAberto} onClick={() => setMenuAberto((aberto) => !aberto)}><span aria-hidden="true">{menuAberto ? '×' : '☰'}</span></button></div>
       </header>
 
       <section className="secao-apresentacao" aria-labelledby="titulo-inicial"><div className="conteudo-apresentacao">

@@ -1,0 +1,155 @@
+.theme-toggle {
+  display: inline-flex;
+  min-width: 76px;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 11px;
+  border: 1px solid #7040a3;
+  border-radius: 10px;
+  color: #f3e8ff;
+  background: #251735;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.theme-toggle:hover { border-color: #b77cff; background: #3a2054; }
+.theme-toggle-icon { display: inline-flex; transition: transform .3s ease; }
+.theme-toggle:hover .theme-toggle-icon { transform: rotate(-18deg); }
+.theme-toggle-label { line-height: 1; }
+.acoes-cabecalho-inicial { display: flex; align-items: center; gap: 10px; }
+.cabecalho-pagina .theme-toggle { margin-left: 4px; }
+.dashboard-cabecalho .theme-toggle { flex: 0 0 auto; }
+
+[data-theme="light"] { color-scheme: light; }
+[data-theme="light"] body,
+[data-theme="light"] #root { color: #0f172a; background: #f8fafc; }
+[data-theme="light"] .theme-toggle { border-color: #ddd6fe; color: #5b21b6; background: #f5f3ff; }
+[data-theme="light"] .theme-toggle:hover { border-color: #a78bfa; background: #ede9fe; }
+
+/* Public pages */
+[data-theme="light"] .pagina-inicial { color: #0f172a; background: radial-gradient(ellipse at 50% 48%, #ede9fe 0, #f8fafc 42%, transparent 72%), #f8fafc; }
+[data-theme="light"] .cabecalho-inicial { background: #ffffffdf; border-bottom: 1px solid #e2e8f0; }
+[data-theme="light"] .navegacao-inicial a,
+[data-theme="light"] .inicio-secao h2,
+[data-theme="light"] .inicio-secao h3,
+[data-theme="light"] .titulo-pagina-inicial { color: #0f172a; }
+[data-theme="light"] .inicio-secao p,
+[data-theme="light"] .descricao-apresentacao,
+[data-theme="light"] .inicio-etapas p { color: #475569; }
+[data-theme="light"] .inicio-recurso-card,
+[data-theme="light"] .inicio-sobre-destaque { border-color: #e2e8f0; color: #334155; background: #ffffff; box-shadow: 0 12px 32px #0f172a0b; }
+[data-theme="light"] .rodape-inicial { border-color: #e2e8f0; background: #ffffff; color: #475569; }
+[data-theme="light"] .botao-login-inicial { color: #5b21b6; }
+
+/* Forms, onboarding, and diagnostic flows */
+[data-theme="light"] .pagina-login,
+[data-theme="light"] .pagina-avaliacao-diagnostica,
+[data-theme="light"] .pagina-resultado-diagnostico,
+[data-theme="light"] .pagina-password-flow,
+[data-theme="light"] .pagina-onboarding { color: #0f172a; background: radial-gradient(circle at 8% 6%, #ede9fe, transparent 34%), #f8fafc; }
+[data-theme="light"] .cartao-login,
+[data-theme="light"] .otp-card,
+[data-theme="light"] .cartao-password,
+[data-theme="light"] .cartao-onboarding,
+[data-theme="light"] .cartao-diagnostico,
+[data-theme="light"] .card-desempenho-materia,
+[data-theme="light"] .card-resumo-geral,
+[data-theme="light"] .cartao-resultado-confirmacao,
+[data-theme="light"] .onboarding-card { border-color: #e2e8f0; color: #0f172a; background: #fff; box-shadow: 0 18px 45px #0f172a12; }
+[data-theme="light"] .titulo-login,
+[data-theme="light"] .nome-pagina-cabecalho,
+[data-theme="light"] .cabecalho-resultados h1,
+[data-theme="light"] .card-desempenho-materia h2,
+[data-theme="light"] .card-desempenho-materia h3,
+[data-theme="light"] .cartao-resultado-confirmacao h1 { color: #0f172a; }
+[data-theme="light"] .descricao-login,
+[data-theme="light"] .card-desempenho-materia p,
+[data-theme="light"] .cabecalho-resultados span,
+[data-theme="light"] .cartao-resultado-confirmacao p { color: #475569; }
+[data-theme="light"] .campo-login,
+[data-theme="light"] .perfil-senha-form input,
+[data-theme="light"] input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="light"] select,
+[data-theme="light"] textarea { color: #0f172a; background-color: #fff; border-color: #cbd5e1; }
+[data-theme="light"] .campo-login::placeholder,
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder { color: #64748b; }
+[data-theme="light"] .botao-voltar-pagina { border-color: #e2e8f0; color: #334155; background: #fff; }
+
+/* Student and staff dashboards */
+[data-theme="light"] .dashboard-aluno { color: #0f172a; background: #f8fafc; }
+[data-theme="light"] .dashboard-sidebar,
+[data-theme="light"] .role-sidebar { border-color: #e2e8f0; background: #fff; }
+[data-theme="light"] .dashboard-cabecalho,
+[data-theme="light"] .role-dashboard-admin .dashboard-cabecalho { border-color: #e2e8f0; color: #334155; background: #ffffffeb; }
+[data-theme="light"] .dashboard-boas-vindas h1,
+[data-theme="light"] .dashboard-planos-cabecalho h1,
+[data-theme="light"] .role-content h1,
+[data-theme="light"] .role-content h2,
+[data-theme="light"] .role-panel-heading h2,
+[data-theme="light"] .dashboard-card-materia h3,
+[data-theme="light"] .dashboard-card-objetivo strong { color: #0f172a; }
+[data-theme="light"] .dashboard-card-objetivo,
+[data-theme="light"] .dashboard-card-materia,
+[data-theme="light"] .dashboard-resumo,
+[data-theme="light"] .dashboard-aviso-diagnostico,
+[data-theme="light"] .dashboard-card-plano,
+[data-theme="light"] .dashboard-card-evolucao,
+[data-theme="light"] .dashboard-aba-plano,
+[data-theme="light"] .dashboard-dia-card,
+[data-theme="light"] .role-card,
+[data-theme="light"] .role-feature-card,
+[data-theme="light"] .role-panel,
+[data-theme="light"] .role-tab-panel,
+[data-theme="light"] .class-list-item,
+[data-theme="light"] .class-student-card,
+[data-theme="light"] .aluno-turma-card,
+[data-theme="light"] .dashboard-historico-card,
+[data-theme="light"] .dashboard-topico-comparacao { border-color: #e2e8f0; color: #0f172a; background: #fff; box-shadow: 0 12px 30px #0f172a0b; }
+[data-theme="light"] .dashboard-card-materia p,
+[data-theme="light"] .dashboard-card-objetivo span,
+[data-theme="light"] .dashboard-titulo-secao > span,
+[data-theme="light"] .dashboard-card-plano > div > span,
+[data-theme="light"] .role-content p,
+[data-theme="light"] .role-card > p,
+[data-theme="light"] .role-content .dashboard-boas-vindas > span { color: #475569; }
+[data-theme="light"] .dashboard-sidebar nav button,
+[data-theme="light"] .role-sidebar nav a,
+[data-theme="light"] .role-sidebar nav button { color: #475569; }
+[data-theme="light"] .dashboard-sidebar nav button:hover,
+[data-theme="light"] .role-sidebar nav a:hover,
+[data-theme="light"] .role-sidebar nav button:hover,
+[data-theme="light"] .dashboard-sidebar nav .dashboard-link-ativo,
+[data-theme="light"] .role-sidebar nav button.role-nav-active { border-color: #ddd6fe; color: #5b21b6; background: #f5f3ff; }
+[data-theme="light"] .role-card > strong { color: #0f172a; }
+[data-theme="light"] .role-badge,
+[data-theme="light"] .dashboard-tags span { border-color: #ddd6fe; color: #5b21b6; background: #f5f3ff; }
+
+/* Profile menus, dialogs, and secondary surfaces */
+[data-theme="light"] .menu-perfil-dropdown,
+[data-theme="light"] .perfil-modal,
+[data-theme="light"] .student-performance-panel,
+[data-theme="light"] .admin-user-modal,
+[data-theme="light"] .tutor-conversa,
+[data-theme="light"] .checkout-premium-modal { border-color: #e2e8f0; color: #0f172a; background: #fff; box-shadow: 0 24px 70px #0f172a1a; }
+[data-theme="light"] .menu-perfil-dropdown button,
+[data-theme="light"] .perfil-modal h2,
+[data-theme="light"] .perfil-modal h3,
+[data-theme="light"] .perfil-dados dd,
+[data-theme="light"] .perfil-senha-form h3 { color: #0f172a; }
+[data-theme="light"] .menu-perfil-dropdown button:hover { color: #5b21b6; background: #f5f3ff; }
+[data-theme="light"] .perfil-dados dt,
+[data-theme="light"] .perfil-senha-form label,
+[data-theme="light"] .perfil-status { color: #475569; }
+
+@media (max-width: 520px) {
+  .theme-toggle { min-width: 40px; width: 40px; padding: 0; }
+  .theme-toggle-label { display: none; }
+  .acoes-cabecalho-inicial { gap: 7px; }
+  .cabecalho-inicial .imagem-logo-inicial { width: 112px; }
+  .cabecalho-inicial .botao-login-inicial { min-width: 76px; min-height: 38px; font-size: 13px; }
+  .cabecalho-pagina .theme-toggle { margin-left: auto; }
+  .dashboard-cabecalho { gap: 8px; }
+}

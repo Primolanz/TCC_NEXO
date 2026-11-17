@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { apiClient, clearSession } from '../servicos/apiClient.js'
 import MenuPerfil from './MenuPerfil.jsx'
 import MarcaNexo from './MarcaNexo.jsx'
+import ThemeToggle from './ThemeToggle.jsx'
 import '../paginasCSS/RoleDashboard.css'
 
 function RoleDashboard({ role, title, eyebrow, subtitle, sections = [], metrics = [], navigation, renderContent, onTabChange }) {
@@ -67,6 +68,7 @@ function RoleDashboard({ role, title, eyebrow, subtitle, sections = [], metrics 
             <span><small>ESPAÇO NEXO</small><strong>{title}</strong></span>
           </div>
           <MenuPerfil user={user} role={role} />
+          <ThemeToggle />
           <button className="dashboard-mobile-menu-button" type="button" aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen((open) => !open)}>{mobileMenuOpen ? <X size={21} /> : <Menu size={21} />}</button>
         </header>
 

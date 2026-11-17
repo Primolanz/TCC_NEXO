@@ -5,6 +5,7 @@ import { apiClient } from '../servicos/apiClient.js'
 import '../paginasCSS/DashboardAluno.css'
 import CheckoutPremiumModal from '../componentes/CheckoutPremiumModal.jsx'
 import MenuPerfil from '../componentes/MenuPerfil.jsx'
+import ThemeToggle from '../componentes/ThemeToggle.jsx'
 import MarcaNexo from '../componentes/MarcaNexo.jsx'
 import TutorNexo from '../componentes/TutorNexo.jsx'
 
@@ -544,6 +545,7 @@ function DashboardAluno() {
             <span><small>ESPAÇO NEXO</small><strong>Área do aluno</strong></span>
           </div>
           <MenuPerfil user={dados.user} role="STUDENT" />
+          <ThemeToggle />
           <button className="dashboard-mobile-menu-button" type="button" aria-label={menuMobileAberto ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuMobileAberto} onClick={() => setMenuMobileAberto((open) => !open)}>{menuMobileAberto ? <X size={21} /> : <Menu size={21} />}</button>
         </header>
         <section className="dashboard-conteudo">
