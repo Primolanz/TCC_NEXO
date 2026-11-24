@@ -58,7 +58,7 @@ function SobreVoceAluno() {
             <div className="grupo-campo-onboarding">
               <label htmlFor="data-nascimento">Qual é a sua data de nascimento?</label>
               <input id="data-nascimento" type="text" inputMode="numeric" autoComplete="bday" placeholder="DD/MM/AAAA" maxLength={10} value={dataNascimento} onChange={(e) => { definirDataNascimento(mascararData(e.target.value)); definirErro('') }} required />
-              {erro && <p role="alert" style={{ color: '#f07a7a' }}>{erro}</p>}
+              {erro && <p className="onboarding-feedback-error" role="alert">{erro}</p>}
             </div>
             <div className="grupo-campo-onboarding">
               <label htmlFor="ocupacao-atual">Qual é a sua ocupação atual?</label>

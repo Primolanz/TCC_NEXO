@@ -164,6 +164,388 @@
 [data-theme="light"] .admin-toast.admin-toast-success { border-color: #bbf7d0; color: #166534; background: #f0fdf4; }
 [data-theme="light"] .admin-toast.admin-toast-success button { color: #166534; }
 
+/* NEXO Light palette: keep these overrides scoped to light mode. */
+[data-theme="light"] {
+  color-scheme: light;
+  --bg-page: #F8F7FC;
+  --bg-surface: #FFFFFF;
+  --bg-muted: #F3F1FA;
+  --border-default: #E2DFF0;
+  --border-control: #D8D4E8;
+  --border-focus: #C4B5FD;
+  --text-primary: #13111C;
+  --text-secondary: #4B4663;
+  --text-muted: #7C7694;
+  --brand-primary: #7C3AED;
+  --brand-hover: #6D28D9;
+  --brand-soft: #EDE9FE;
+  --brand-soft-text: #5B21B6;
+  --brand-soft-border: #DDD6FE;
+  --state-success-bg: #ECFDF5;
+  --state-success-text: #065F46;
+  --state-success-border: #A7F3D0;
+  --state-error-bg: #FEF2F2;
+  --state-error-text: #991B1B;
+  --state-error-border: #FECACA;
+  --surface-shadow: 0 4px 20px rgba(19, 17, 28, 0.05);
+}
+
+[data-theme="light"] body,
+[data-theme="light"] #root,
+[data-theme="light"] .dashboard-aluno,
+[data-theme="light"] .role-dashboard,
+[data-theme="light"] .pagina-inicial,
+[data-theme="light"] .pagina-login,
+[data-theme="light"] .pagina-avaliacao-diagnostica,
+[data-theme="light"] .pagina-resultado-diagnostico,
+[data-theme="light"] .pagina-password-flow,
+[data-theme="light"] .pagina-onboarding,
+[data-theme="light"] .pagina-onboarding-aluno,
+[data-theme="light"] .pagina-escolher-plano,
+[data-theme="light"] .pagina-checkout-plano { color: var(--text-primary); background: var(--bg-page); }
+
+/* Shared panels and navigation surfaces */
+[data-theme="light"] .cabecalho-inicial,
+[data-theme="light"] .dashboard-cabecalho,
+[data-theme="light"] .dashboard-sidebar,
+[data-theme="light"] .role-sidebar,
+[data-theme="light"] .cabecalho-pagina,
+[data-theme="light"] .cartao-login,
+[data-theme="light"] .otp-card,
+[data-theme="light"] .cartao-password,
+[data-theme="light"] .cartao-onboarding,
+[data-theme="light"] .cartao-diagnostico,
+[data-theme="light"] .card-desempenho-materia,
+[data-theme="light"] .card-resumo-geral,
+[data-theme="light"] .cartao-resultado-confirmacao,
+[data-theme="light"] .onboarding-card,
+[data-theme="light"] .inicio-recurso-card,
+[data-theme="light"] .inicio-sobre-destaque,
+[data-theme="light"] .dashboard-card-objetivo,
+[data-theme="light"] .dashboard-card-materia,
+[data-theme="light"] .dashboard-resumo,
+[data-theme="light"] .dashboard-aviso-diagnostico,
+[data-theme="light"] .dashboard-card-plano,
+[data-theme="light"] .dashboard-card-evolucao,
+[data-theme="light"] .dashboard-aba-plano,
+[data-theme="light"] .dashboard-dia-card,
+[data-theme="light"] .role-card,
+[data-theme="light"] .role-feature-card,
+[data-theme="light"] .role-panel,
+[data-theme="light"] .role-tab-panel,
+[data-theme="light"] .role-action-card,
+[data-theme="light"] .role-form,
+[data-theme="light"] .role-list-item,
+[data-theme="light"] .role-report-metrics article,
+[data-theme="light"] .class-list-item,
+[data-theme="light"] .class-student-card,
+[data-theme="light"] .aluno-turma-card,
+[data-theme="light"] .dashboard-historico-card,
+[data-theme="light"] .dashboard-topico-comparacao,
+[data-theme="light"] .teacher-submission-card,
+[data-theme="light"] .admin-metric-card,
+[data-theme="light"] .admin-overview-panel,
+[data-theme="light"] .admin-tab-panel,
+[data-theme="light"] .admin-overview-link,
+[data-theme="light"] .menu-perfil-dropdown,
+[data-theme="light"] .perfil-modal,
+[data-theme="light"] .student-performance-panel,
+[data-theme="light"] .admin-user-modal,
+[data-theme="light"] .tutor-conversa,
+[data-theme="light"] .checkout-premium-modal,
+[data-theme="light"] .aluno-atividade-modal,
+[data-theme="light"] .login-cold-start-modal {
+  border-color: var(--border-default);
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  box-shadow: var(--surface-shadow);
+}
+
+[data-theme="light"] .cartao-plano { border-color: var(--border-default); color: var(--text-primary); background: var(--bg-surface); box-shadow: var(--surface-shadow); }
+[data-theme="light"] .cartao-plano-pago { background: var(--bg-surface); }
+[data-theme="light"] .cartao-plano:hover,
+[data-theme="light"] .cartao-plano-selecionado { border-color: #A78BFA; }
+[data-theme="light"] .titulo-plano,
+[data-theme="light"] .titulo-escolher-plano { color: var(--text-primary); }
+[data-theme="light"] .descricao-plano,
+[data-theme="light"] .descricao-escolher-plano,
+[data-theme="light"] .beneficios-plano { color: var(--text-secondary); }
+[data-theme="light"] .botao-escolher-plano { border-color: var(--brand-primary); color: #FFFFFF; background: var(--brand-primary); }
+[data-theme="light"] .botao-escolher-plano:hover { border-color: var(--brand-hover); background: var(--brand-hover); }
+
+[data-theme="light"] .dashboard-card-objetivo:hover,
+[data-theme="light"] .dashboard-card-materia:hover,
+[data-theme="light"] .dashboard-resumo:hover,
+[data-theme="light"] .dashboard-card-plano:hover,
+[data-theme="light"] .dashboard-card-evolucao:hover,
+[data-theme="light"] .role-card:hover,
+[data-theme="light"] .role-feature-card:hover,
+[data-theme="light"] .class-list-item:hover,
+[data-theme="light"] .class-student-card:hover,
+[data-theme="light"] .aluno-turma-card:hover,
+[data-theme="light"] .dashboard-historico-card:hover,
+[data-theme="light"] .dashboard-topico-comparacao:hover,
+[data-theme="light"] .teacher-submission-card:hover { border-color: #A78BFA; box-shadow: var(--surface-shadow); }
+
+/* Text hierarchy */
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4,
+[data-theme="light"] .titulo-login,
+[data-theme="light"] .nome-pagina-cabecalho,
+[data-theme="light"] .cabecalho-resultados h1,
+[data-theme="light"] .card-desempenho-materia h2,
+[data-theme="light"] .card-desempenho-materia h3,
+[data-theme="light"] .card-resumo-geral h2,
+[data-theme="light"] .cartao-resultado-confirmacao h1,
+[data-theme="light"] .dashboard-boas-vindas h1,
+[data-theme="light"] .dashboard-planos-cabecalho h1,
+[data-theme="light"] .role-content h1,
+[data-theme="light"] .role-content h2,
+[data-theme="light"] .role-panel-heading h2,
+[data-theme="light"] .role-panel-heading h3,
+[data-theme="light"] .student-performance-panel h2,
+[data-theme="light"] .student-performance-panel h3,
+[data-theme="light"] .aluno-atividade-modal > h2,
+[data-theme="light"] .perfil-identidade-principal h2,
+[data-theme="light"] .menu-perfil-user-copy > strong { color: var(--text-primary); }
+
+[data-theme="light"] p,
+[data-theme="light"] label,
+[data-theme="light"] small,
+[data-theme="light"] .descricao-login,
+[data-theme="light"] .card-desempenho-materia p,
+[data-theme="light"] .cabecalho-resultados span,
+[data-theme="light"] .cartao-resultado-confirmacao p,
+[data-theme="light"] .dashboard-card-materia p,
+[data-theme="light"] .dashboard-card-objetivo span,
+[data-theme="light"] .dashboard-titulo-secao > span,
+[data-theme="light"] .role-content p,
+[data-theme="light"] .role-card > p,
+[data-theme="light"] .role-content .dashboard-boas-vindas > span,
+[data-theme="light"] .student-email,
+[data-theme="light"] .student-assignment small,
+[data-theme="light"] .perfil-dados dt,
+[data-theme="light"] .perfil-senha-form label,
+[data-theme="light"] .menu-perfil-user-copy > small { color: var(--text-secondary); }
+
+/* Inputs, including forms inside dialogs and dashboards */
+[data-theme="light"] input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="light"] select,
+[data-theme="light"] textarea,
+[data-theme="light"] .campo-login,
+[data-theme="light"] .role-form-grid input,
+[data-theme="light"] .role-form-grid select,
+[data-theme="light"] .role-form-grid textarea,
+[data-theme="light"] .role-date-selects select,
+[data-theme="light"] .assignment-edit-form input,
+[data-theme="light"] .assignment-edit-form select,
+[data-theme="light"] .assignment-edit-form textarea,
+[data-theme="light"] .perfil-senha-form input,
+[data-theme="light"] .tutor-form,
+[data-theme="light"] .aluno-atividade-modal-prazo,
+[data-theme="light"] .aluno-atividade-modal-conteudo,
+[data-theme="light"] .student-summary,
+[data-theme="light"] .student-assignment,
+[data-theme="light"] .perfil-dados > div {
+  border-color: var(--border-control);
+  color: var(--text-primary);
+  background-color: var(--bg-surface);
+  color-scheme: light;
+}
+
+[data-theme="light"] input:not([type="checkbox"]):not([type="radio"]):focus,
+[data-theme="light"] select:focus,
+[data-theme="light"] textarea:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px #C4B5FD44; outline: none; }
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder { color: var(--text-muted); opacity: 1; }
+
+/* Neutral controls, active states, badges, and semantic feedback */
+[data-theme="light"] .botao-voltar-pagina,
+[data-theme="light"] .role-secondary-button,
+[data-theme="light"] .teacher-activity-button.secondary,
+[data-theme="light"] .class-copy-button,
+[data-theme="light"] .student-modal-close,
+[data-theme="light"] .aluno-atividade-modal-fechar,
+[data-theme="light"] .perfil-fechar,
+[data-theme="light"] .menu-perfil-trigger,
+[data-theme="light"] .menu-perfil-dropdown button,
+[data-theme="light"] .dashboard-sidebar nav button,
+[data-theme="light"] .role-sidebar nav a,
+[data-theme="light"] .role-sidebar nav button,
+[data-theme="light"] .student-row { border-color: var(--border-control); color: var(--text-primary); background: var(--bg-muted); }
+[data-theme="light"] .botao-voltar-pagina:hover,
+[data-theme="light"] .role-secondary-button:hover,
+[data-theme="light"] .teacher-activity-button.secondary:hover:not(:disabled),
+[data-theme="light"] .class-copy-button:hover,
+[data-theme="light"] .student-row:hover,
+[data-theme="light"] .menu-perfil-trigger:hover,
+[data-theme="light"] .menu-perfil-dropdown button:hover { border-color: #A78BFA; color: var(--brand-soft-text); background: var(--brand-soft); }
+[data-theme="light"] .dashboard-sidebar nav button:hover,
+[data-theme="light"] .role-sidebar nav a:hover,
+[data-theme="light"] .role-sidebar nav button:hover,
+[data-theme="light"] .dashboard-sidebar nav .dashboard-link-ativo,
+[data-theme="light"] .role-sidebar nav button.role-nav-active { border-color: var(--brand-soft-border); color: var(--brand-soft-text); background: var(--brand-soft); }
+[data-theme="light"] .role-badge,
+[data-theme="light"] .dashboard-tags span,
+[data-theme="light"] .menu-perfil-role,
+[data-theme="light"] .admin-metric-card > .role-badge,
+[data-theme="light"] .tags-pontos-fortes span { border-color: var(--brand-soft-border); color: var(--brand-soft-text); background: var(--brand-soft); }
+[data-theme="light"] .role-badge.submission-received,
+[data-theme="light"] .student-status.completed,
+[data-theme="light"] .perfil-feedback.sucesso,
+[data-theme="light"] .admin-toast.admin-toast-success { border-color: var(--state-success-border); color: var(--state-success-text); background: var(--state-success-bg); }
+[data-theme="light"] .role-badge.submission-missing,
+[data-theme="light"] .student-status.overdue,
+[data-theme="light"] .perfil-feedback.erro,
+[data-theme="light"] .admin-toast { border-color: var(--state-error-border); color: var(--state-error-text); background: var(--state-error-bg); }
+[data-theme="light"] .student-status.pending { border: 1px solid #FDE68A; color: #92400E; background: #FFFBEB; }
+
+/* Primary actions retain the NEXO purple with white text. */
+[data-theme="light"] .theme-toggle,
+[data-theme="light"] .botao-login-inicial,
+[data-theme="light"] .botao-resultado-principal,
+[data-theme="light"] .role-primary-button,
+[data-theme="light"] .teacher-activity-button.primary,
+[data-theme="light"] .perfil-salvar-senha,
+[data-theme="light"] .tutor-form button,
+[data-theme="light"] .aluno-atividade-modal .dashboard-modal-marcar { border-color: var(--brand-primary); color: #FFFFFF; background: var(--brand-primary); }
+[data-theme="light"] .theme-toggle:hover,
+[data-theme="light"] .botao-login-inicial:hover,
+[data-theme="light"] .botao-resultado-principal:hover,
+[data-theme="light"] .role-primary-button:hover,
+[data-theme="light"] .teacher-activity-button.primary:hover:not(:disabled),
+[data-theme="light"] .perfil-salvar-senha:hover,
+[data-theme="light"] .tutor-form button:hover { border-color: var(--brand-hover); color: #FFFFFF; background: var(--brand-hover); }
+
+/* Dialog backdrops and every modal/drawer surface */
+[data-theme="light"] .perfil-backdrop,
+[data-theme="light"] .student-modal-backdrop,
+[data-theme="light"] .admin-modal-backdrop,
+[data-theme="light"] .checkout-premium-backdrop,
+[data-theme="light"] .aluno-atividade-modal-backdrop,
+[data-theme="light"] .login-cold-start-backdrop { background: rgba(19, 17, 28, 0.45); }
+[data-theme="light"] .perfil-modal,
+[data-theme="light"] .student-performance-panel,
+[data-theme="light"] .admin-user-modal,
+[data-theme="light"] .checkout-premium-modal,
+[data-theme="light"] .aluno-atividade-modal,
+[data-theme="light"] .login-cold-start-modal { border: 1px solid var(--border-default); color: var(--text-primary); background: var(--bg-surface); box-shadow: 0 18px 60px rgba(19, 17, 28, 0.16); }
+[data-theme="light"] .dashboard-mobile-overlay { background: rgba(19, 17, 28, 0.45); }
+
+/* Small-screen menus and branded headings */
+[data-theme="light"] .dashboard-aluno:not(.role-dashboard) > .dashboard-sidebar.mobile-drawer-open { border-color: var(--border-default); background: var(--bg-surface); box-shadow: 18px 0 50px rgba(19, 17, 28, 0.16); }
+[data-theme="light"] .navegacao-inicial a,
+[data-theme="light"] .inicio-secao h2,
+[data-theme="light"] .inicio-secao h3,
+[data-theme="light"] .titulo-pagina-inicial,
+[data-theme="light"] .nome-pagina-cabecalho { color: var(--text-primary); }
+[data-theme="light"] .inicio-secao p,
+[data-theme="light"] .descricao-apresentacao,
+[data-theme="light"] .inicio-etapas p,
+[data-theme="light"] .rodape-inicial { color: var(--text-secondary); }
+
+[data-theme="light"] .dashboard-foco-semana h2,
+[data-theme="light"] .dashboard-dia-cabecalho h2,
+[data-theme="light"] .dashboard-resumo-cabecalho h2,
+[data-theme="light"] .dashboard-comparacao-titulo h2,
+[data-theme="light"] .role-card strong,
+[data-theme="light"] .role-list-item strong,
+[data-theme="light"] .class-list-details > strong,
+[data-theme="light"] .class-student-list h4,
+[data-theme="light"] .student-row strong,
+[data-theme="light"] .student-assignment strong,
+[data-theme="light"] .student-summary strong,
+[data-theme="light"] .teacher-submission-card > strong,
+[data-theme="light"] .admin-overview-link strong,
+[data-theme="light"] .checkout-premium-modal h2,
+[data-theme="light"] .aluno-atividade-modal-conteudo h3,
+[data-theme="light"] .aluno-atividade-modal-prazo strong,
+[data-theme="light"] .student-summary span { color: var(--text-primary); }
+
+[data-theme="light"] .class-code,
+[data-theme="light"] .class-code > span,
+[data-theme="light"] .class-student-list > p,
+[data-theme="light"] .aluno-atividade-modal-prazo span,
+[data-theme="light"] .aluno-atividade-modal-conteudo p,
+[data-theme="light"] .submission-detail-block > strong,
+[data-theme="light"] .submission-url-preview,
+[data-theme="light"] .submission-no-content,
+[data-theme="light"] .assignment-submission-text { color: var(--text-secondary); }
+
+[data-theme="light"] .role-action-card,
+[data-theme="light"] .role-list-item,
+[data-theme="light"] .role-report-metrics article,
+[data-theme="light"] .class-list-item,
+[data-theme="light"] .class-student-card,
+[data-theme="light"] .student-row,
+[data-theme="light"] .student-assignment,
+[data-theme="light"] .dashboard-foco-semana,
+[data-theme="light"] .dashboard-resumo-cabecalho,
+[data-theme="light"] .dashboard-topico-card,
+[data-theme="light"] .dashboard-plano-dia,
+[data-theme="light"] .admin-user-row,
+[data-theme="light"] .admin-teacher-card,
+[data-theme="light"] .admin-overview-link { border-color: var(--border-default); color: var(--text-primary); background: var(--bg-surface); }
+
+[data-theme="light"] .class-code code,
+[data-theme="light"] .dashboard-card-icon,
+[data-theme="light"] .role-card-icon,
+[data-theme="light"] .role-empty-icon { border-color: var(--brand-soft-border); color: var(--brand-soft-text); background: var(--brand-soft); }
+
+[data-theme="light"] .teacher-activity-button.secondary,
+[data-theme="light"] .role-secondary-button,
+[data-theme="light"] .admin-user-action,
+[data-theme="light"] .admin-modal-close,
+[data-theme="light"] .dashboard-marcar-estudado,
+[data-theme="light"] .aluno-atividade-modal-fechar,
+[data-theme="light"] .student-modal-close,
+[data-theme="light"] .class-copy-button { border-color: var(--border-control); color: var(--text-primary); background: var(--bg-muted); }
+[data-theme="light"] .teacher-activity-button.secondary:hover:not(:disabled),
+[data-theme="light"] .role-secondary-button:hover,
+[data-theme="light"] .admin-user-action:hover,
+[data-theme="light"] .admin-modal-close:hover,
+[data-theme="light"] .dashboard-marcar-estudado:hover,
+[data-theme="light"] .aluno-atividade-modal-fechar:hover,
+[data-theme="light"] .student-modal-close:hover,
+[data-theme="light"] .class-copy-button:hover { border-color: #A78BFA; color: var(--brand-soft-text); background: var(--brand-soft); }
+
+[data-theme="light"] .role-primary-button,
+[data-theme="light"] .teacher-activity-button.primary,
+[data-theme="light"] .checkout-premium-confirm,
+[data-theme="light"] .dashboard-cta-evolucao,
+[data-theme="light"] .aluno-turma-form-controls button,
+[data-theme="light"] .perfil-salvar-senha,
+[data-theme="light"] .perfil-sair { border-color: var(--brand-primary); color: #FFFFFF; background: var(--brand-primary); }
+[data-theme="light"] .dashboard-cabecalho button { border-color: var(--border-control); color: var(--text-primary); background: var(--bg-muted); }
+[data-theme="light"] .dashboard-cabecalho button:hover { border-color: #A78BFA; color: var(--brand-soft-text); background: var(--brand-soft); }
+
+[data-theme="light"] .perfil-sair,
+[data-theme="light"] .menu-perfil-dropdown .menu-perfil-logout { border-color: var(--state-error-border); color: var(--state-error-text); background: var(--state-error-bg); }
+[data-theme="light"] .perfil-sair:hover,
+[data-theme="light"] .menu-perfil-dropdown .menu-perfil-logout:hover { border-color: var(--state-error-border); color: var(--state-error-text); background: #FEE2E2; }
+
+[data-theme="light"] .checkout-premium-tabs button.active,
+[data-theme="light"] .opcao-perfil-ativa { border-color: var(--brand-primary); color: #FFFFFF; background: var(--brand-primary); }
+[data-theme="light"] .role-notice,
+[data-theme="light"] .caixa-confirmacao-email,
+[data-theme="light"] .caixa-status-aprovacao { border-color: var(--border-default); color: var(--text-secondary); background: var(--bg-muted); }
+[data-theme="light"] .admin-toast.admin-toast-success button,
+[data-theme="light"] .admin-toast button { color: inherit; }
+
+.ui-feedback-error,
+.ui-feedback-success,
+.login-cold-start-notice { margin-bottom: 15px; padding: 10px; border: 1px solid transparent; border-radius: 6px; text-align: center; }
+.ui-feedback-error { color: #ef4444; background: #fee2e2; }
+.ui-feedback-success { color: #166534; background: #dcfce7; font-size: 14px; }
+.login-cold-start-notice { color: #c084fc; border-color: rgba(168, 85, 247, 0.3); background: rgba(124, 58, 237, 0.15); font-size: 13px; }
+.onboarding-feedback-error { color: #f07a7a; }
+[data-theme="light"] .ui-feedback-error { border-color: var(--state-error-border); color: var(--state-error-text); background: var(--state-error-bg); }
+[data-theme="light"] .ui-feedback-success { border-color: var(--state-success-border); color: var(--state-success-text); background: var(--state-success-bg); }
+[data-theme="light"] .login-cold-start-notice { border-color: var(--brand-soft-border); color: var(--brand-soft-text); background: var(--brand-soft); }
+[data-theme="light"] .onboarding-feedback-error { color: var(--state-error-text); }
+
 @media (max-width: 520px) {
   .theme-toggle { min-width: 40px; width: 40px; padding: 0; }
   .theme-toggle-label { display: none; }

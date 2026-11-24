@@ -117,17 +117,7 @@ function CadastroAluno() {
 
           {/* Exibição de mensagens de erro retornado pela API */}
           {erro && (
-            <div
-              style={{
-                color: "#ef4444",
-                backgroundColor: "#fee2e2",
-                padding: "10px",
-                borderRadius: "6px",
-                marginBottom: "15px",
-                fontSize: "14px",
-                textAlign: "center",
-              }}
-            >
+            <div className="ui-feedback-error">
               {erro}
             </div>
           )}

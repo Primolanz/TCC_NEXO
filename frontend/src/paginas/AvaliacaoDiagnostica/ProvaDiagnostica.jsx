@@ -128,16 +128,7 @@ function ProvaDiagnostica() {
         </div>
 
         {erro && (
-          <div
-            style={{
-              color: '#ef4444',
-              backgroundColor: '#fee2e2',
-              padding: '12px',
-              borderRadius: '6px',
-              marginBottom: '15px',
-              textAlign: 'center',
-            }}
-          >
+          <div className="ui-feedback-error">
             {erro}
           </div>
         )}

@@ -110,7 +110,7 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
           <p className="descricao-login">{descricao}</p>
 
           {mensagemSucesso && (
-            <div role="status" style={{ color: "#166534", backgroundColor: "#dcfce7", padding: "10px", borderRadius: "6px", marginBottom: "15px", fontSize: "14px", textAlign: "center" }}>
+            <div className="ui-feedback-success" role="status">
               {mensagemSucesso}
             </div>
           )}
@@ -133,35 +133,14 @@ function TelaLogin({ perfilAtivo, titulo, descricao, emailExemplo }) {
 
           {/* Mensagem de Erro */}
           {erro && (
-            <div
-              style={{
-                color: "#ef4444",
-                backgroundColor: "#fee2e2",
-                padding: "10px",
-                borderRadius: "6px",
-                marginBottom: "15px",
-                fontSize: "14px",
-                textAlign: "center",
-              }}
-            >
+            <div className="ui-feedback-error">
               {erro}
             </div>
           )}
 
           {/* Aviso de Cold Start do Render */}
           {mensagemAviso && (
-            <div
-              style={{
-                color: "#c084fc",
-                backgroundColor: "rgba(124, 58, 237, 0.15)",
-                border: "1px solid rgba(168, 85, 247, 0.3)",
-                padding: "10px",
-                borderRadius: "6px",
-                marginBottom: "15px",
-                fontSize: "13px",
-                textAlign: "center",
-              }}
-            >
+            <div className="login-cold-start-notice">
               <span className="login-cold-start-spinner" aria-hidden="true" />{mensagemAviso}
             </div>
           )}
