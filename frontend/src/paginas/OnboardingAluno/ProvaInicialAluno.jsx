@@ -35,15 +35,8 @@ function ProvaInicialAluno() {
 
             <div className="linha-etapas-onboarding linha-etapas-concluida" />
 
-            <div className="etapa-onboarding-item etapa-onboarding-concluida">
-              <span className="numero-etapa-onboarding">✓</span>
-              <span>Seus objetivos</span>
-            </div>
-
-            <div className="linha-etapas-onboarding linha-etapas-concluida" />
-
             <div className="etapa-onboarding-item etapa-onboarding-ativa">
-              <span className="numero-etapa-onboarding">3</span>
+              <span className="numero-etapa-onboarding">2</span>
               <span>Prova Inicial</span>
             </div>
           </div>

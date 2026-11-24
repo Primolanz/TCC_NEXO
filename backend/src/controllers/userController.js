@@ -187,7 +187,7 @@ exports.loginUser = async (req, res) => {
     if (diagnosticError) throw diagnosticError;
     if (planError) throw planError;
 
-    const hasProfile = Boolean(userData.age_group && userData.occupation && userData.main_goal);
+    const hasProfile = Boolean(userData.age_group && userData.occupation);
     const hasDiagnostic = Boolean(diagnostic);
     const hasStudyPlan = Boolean(studyPlan);
 
@@ -263,7 +263,7 @@ exports.getMyProfile = async (req, res) => {
     if (userError) throw userError;
     if (diagnosticError) throw diagnosticError;
     if (!user) return res.status(404).json({ error: 'Perfil de usuário não encontrado.' });
-    const hasProfile = Boolean(user.age_group && user.occupation && user.main_goal);
+    const hasProfile = Boolean(user.age_group && user.occupation);
     const hasInitialDiagnostic = Boolean(diagnostic);
     return res.json({ user: {
       ...user,
@@ -281,22 +281,34 @@ exports.getMyProfile = async (req, res) => {
 exports.updateOnboarding = async (req, res) => {
   try {
     const userId = req.user.id; // Obtido do authMiddleware
-    const { age_group, occupation, main_goal } = req.body;
-
-    if (!age_group || !occupation || !main_goal) {
-      return res.status(400).json({ error: 'Preencha todos os campos do onboarding.' });
+    const { birth_date, occupation } = req.body;
+    const match = typeof birth_date === 'string' && birth_date.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!match || !occupation) return res.status(400).json({ error: 'Informe uma data de nascimento e uma ocupação válidas.' });
+    const [, dayText, monthText, yearText] = match;
+    const day = Number(dayText);
+    const month = Number(monthText);
+    const year = Number(yearText);
+    const birthDate = new Date(Date.UTC(year, month - 1, day));
+    const today = new Date();
+    const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+    if (birthDate.getUTCFullYear() !== year || birthDate.getUTCMonth() !== month - 1 || birthDate.getUTCDate() !== day || birthDate.getTime() > todayUtc) {
+      return res.status(400).json({ error: 'Informe uma data de nascimento válida e não futura no formato DD/MM/AAAA.' });
     }
+    let age = today.getUTCFullYear() - year;
+    if (today.getUTCMonth() < month - 1 || (today.getUTCMonth() === month - 1 && today.getUTCDate() < day)) age -= 1;
+    const age_group = age < 18 ? 'Menos de 18' : age < 25 ? '18-24' : age < 35 ? '25-34' : age < 45 ? '35-44' : '45 ou mais';
+    const birthDateIso = `${yearText}-${monthText}-${dayText}`;
 
     const { data, error } = await supabase
       .from('users')
       .update({
         age_group,
         occupation,
-        main_goal,
+        birth_date: birthDateIso,
         updated_at: new Date()
       })
       .eq('id', userId)
-      .select('id, name, email, role, plan, age_group, occupation, main_goal')
+      .select('id, name, email, role, plan, age_group, occupation, birth_date, main_goal')
       .single();
 
     if (error) throw error;

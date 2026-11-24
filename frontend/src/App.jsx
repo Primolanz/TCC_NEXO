@@ -13,7 +13,6 @@ import AguardandoAprovacaoProfessor from './paginas/Cadastro/AguardandoAprovacao
 import EscolherPlano from './paginas/OnboardingAluno/EscolherPlano.jsx'
 import CheckoutPlano from './paginas/OnboardingAluno/CheckoutPlano.jsx'
 import SobreVoceAluno from './paginas/OnboardingAluno/SobreVoceAluno.jsx'
-import ObjetivosAluno from './paginas/OnboardingAluno/ObjetivosAluno.jsx'
 import ProvaInicialAluno from './paginas/OnboardingAluno/ProvaInicialAluno.jsx'
 import ProvaDiagnostica from './paginas/AvaliacaoDiagnostica/ProvaDiagnostica.jsx'
 import ResultadoDiagnostico from './paginas/AvaliacaoDiagnostica/ResultadoDiagnostico.jsx'
@@ -121,7 +120,7 @@ function App() {
       <Route path="/onboarding/escolher-plano" element={<EscolherPlano />} />
       <Route path="/onboarding/checkout" element={<CheckoutPlano />} />
       <Route path="/onboarding/aluno" element={<SobreVoceAluno />} />
-      <Route path="/onboarding/aluno/objetivos" element={<ObjetivosAluno />} />
+      <Route path="/onboarding/aluno/objetivos" element={<Navigate to="/onboarding/aluno/prova-inicial" replace />} />
       <Route path="/onboarding/aluno/prova-inicial" element={<ProvaInicialAluno />} />
 
       <Route path="/avaliacao/diagnostica" element={<ProvaDiagnostica />} />

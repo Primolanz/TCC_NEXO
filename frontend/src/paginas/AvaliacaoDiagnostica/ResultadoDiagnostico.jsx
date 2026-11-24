@@ -96,7 +96,7 @@ function ResultadoDiagnostico() {
         <button className="botao-resultado-principal" type="button" onClick={() => navegar('/inicio')}>
           Continuar para o início →
         </button>
-        <p className="link-voltar-resultados"><Link to="/avaliacao/diagnostica?mode=retake">Refazer Questionário de Diagnóstico</Link></p>
+        {isRetake && <p className="link-voltar-resultados"><Link to="/avaliacao/diagnostica?mode=retake">Refazer Questionário de Diagnóstico</Link></p>}
       </section>
     </main>
   )
