@@ -56,6 +56,27 @@ function formatSaoPauloDateTimeLocal(date) {
   return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`
 }
 
+function datePtBrToIso(value) {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value)
+  if (!match) return ''
+  const [, day, month, year] = match
+  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)))
+  if (date.getUTCFullYear() !== Number(year) || date.getUTCMonth() !== Number(month) - 1 || date.getUTCDate() !== Number(day)) return ''
+  return `${year}-${month}-${day}`
+}
+
+function isoToDatePtBr(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : ''
+}
+
+function formatDatePtBrInput(value) {
+  const digits = value.replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
+}
+
 function getMinimumSaoPauloDateTime() {
   return formatSaoPauloDateTimeLocal(new Date(Math.ceil(Date.now() / 60000) * 60000))
 }
@@ -86,6 +107,7 @@ function formatDatePtBr(value) {
 function DashboardProfessor() {
   const [dataAtualFormatadaISO, setDataAtualFormatadaISO] = useState(getMinimumSaoPauloDateTime)
   const [dataPrazo, setDataPrazo] = useState('')
+  const [dataPrazoTexto, setDataPrazoTexto] = useState('')
   const [horaPrazo, setHoraPrazo] = useState('')
   const [classes, setClasses] = useState([])
   const [activities, setActivities] = useState([])
@@ -94,6 +116,7 @@ function DashboardProfessor() {
   const [editActivityTitle, setEditActivityTitle] = useState('')
   const [editActivityDescription, setEditActivityDescription] = useState('')
   const [editActivityDate, setEditActivityDate] = useState('')
+  const [editActivityDateText, setEditActivityDateText] = useState('')
   const [editActivityTime, setEditActivityTime] = useState('')
   const [savingActivityEdit, setSavingActivityEdit] = useState(false)
   const [deletingActivityId, setDeletingActivityId] = useState('')
@@ -361,6 +384,10 @@ function DashboardProfessor() {
     const form = new FormData(formElement)
     setActivityError('')
     setActivitySuccess('')
+    if (dataPrazoTexto && !dataPrazo) {
+      setActivityError('Informe uma data de entrega válida no formato DD/MM/AAAA.')
+      return
+    }
     if (!dataPrazo || !horaPrazo || `${dataPrazo}T${horaPrazo}` < dataAtualFormatadaISO) {
       setActivityError('Selecione a data e o horário limite da atividade.')
       return
@@ -384,6 +411,7 @@ function DashboardProfessor() {
       setActivitySuccess('Atividade lançada com sucesso. Ela já está disponível para os alunos da turma.')
       formElement.reset()
       setDataPrazo('')
+      setDataPrazoTexto('')
       setHoraPrazo('')
     } catch (error) {
       setActivityError(error.message)
@@ -399,6 +427,7 @@ function DashboardProfessor() {
     setEditActivityTitle(assignment.title || '')
     setEditActivityDescription(assignment.description || '')
     setEditActivityDate(date)
+    setEditActivityDateText(isoToDatePtBr(date))
     setEditActivityTime(time)
     setActivityError('')
   }
@@ -408,6 +437,10 @@ function DashboardProfessor() {
     if (!editingActivity) return
     setActivityError('')
     setActivitySuccess('')
+    if (editActivityDateText && !editActivityDate) {
+      setActivityError('Informe uma data de entrega válida no formato DD/MM/AAAA.')
+      return
+    }
     if (Boolean(editActivityDate) !== Boolean(editActivityTime)) {
       setActivityError('Preencha a data e o horário de entrega, ou deixe os dois vazios.')
       return
@@ -538,11 +571,11 @@ function DashboardProfessor() {
             <label>Turma<select name="turma" defaultValue="" required><option value="" disabled>Selecione uma turma</option>{classes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
             <label>Título da atividade<input name="titulo" placeholder="Ex.: Revisão de frações" maxLength="180" required /></label>
             <label className="role-form-wide">Instruções / Conteúdo<textarea name="descricao" placeholder="Descreva o que os alunos devem fazer." rows="4" /></label>
-            <div className="role-date-time-fields"><label>Data de entrega<input type="date" name="dataPrazo" value={dataPrazo} min={dataAtualFormatadaISO.slice(0, 10)} onChange={(event) => setDataPrazo(event.target.value)} required /></label><label>Horário de entrega<input type="time" name="horaPrazo" value={horaPrazo} min={dataPrazo === dataAtualFormatadaISO.slice(0, 10) ? dataAtualFormatadaISO.slice(11, 16) : '00:00'} onChange={(event) => setHoraPrazo(event.target.value)} required /></label></div>
+            <div className="role-date-time-fields"><label>Data de entrega<input type="text" name="dataPrazo" value={dataPrazoTexto} inputMode="numeric" placeholder="DD/MM/AAAA" autoComplete="off" maxLength="10" pattern="\d{2}/\d{2}/\d{4}" title="Digite a data no formato DD/MM/AAAA" onChange={(event) => { const formattedDate = formatDatePtBrInput(event.target.value); setDataPrazoTexto(formattedDate); setDataPrazo(datePtBrToIso(formattedDate)) }} required /></label><label>Horário de entrega<input type="time" name="horaPrazo" value={horaPrazo} min={dataPrazo === dataAtualFormatadaISO.slice(0, 10) ? dataAtualFormatadaISO.slice(11, 16) : '00:00'} onChange={(event) => setHoraPrazo(event.target.value)} required /></label></div>
           </div><button className="role-primary-button" type="submit" disabled={creatingActivity}>{creatingActivity ? 'Publicando…' : '＋ Publicar atividade'}</button>
         </form> : <div className="role-empty-state"><span className="role-empty-icon">＋</span><strong>Crie uma turma para começar</strong><p>As atividades são vinculadas a uma turma. Cadastre uma turma antes de lançar tarefas.</p><button className="role-secondary-button" type="button" onClick={() => goToTab('turmas')}>Ir para Minhas Turmas</button></div>}
         {activities.length > 0 && <div className="role-list role-activities-list"><div className="role-list-heading"><h3>Atividades lançadas</h3><span>{activities.length} no total</span></div>{activities.map((item) => <article className="role-list-item" key={item.id}><span className="role-card-icon role-icon-teal" aria-hidden="true">✎</span><div><strong>{item.title}</strong><small>{item.class_name}{item.due_date ? ` · Entrega: ${formatDatePtBr(item.due_date)}` : ' · Sem data de entrega'}</small></div><span className="role-badge">Publicada</span><div className="teacher-activity-actions"><button className="teacher-activity-button primary" type="button" onClick={() => verEntregas(item)}><ClipboardList size={16} aria-hidden="true" />Ver Entregas</button><button className="teacher-activity-button secondary" type="button" onClick={() => abrirEdicaoAtividade(item)}><Pencil size={15} aria-hidden="true" />Editar</button><button className="teacher-activity-button danger" type="button" disabled={deletingActivityId === item.id} onClick={() => excluirAtividade(item)}><Trash2 size={15} aria-hidden="true" />{deletingActivityId === item.id ? 'Excluindo...' : 'Excluir'}</button></div></article>)}</div>}
-        {editingActivity && <div className="student-modal-backdrop assignment-edit-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !savingActivityEdit) setEditingActivity(null) }}><section className="student-performance-panel assignment-edit-panel" role="dialog" aria-modal="true" aria-labelledby="edit-assignment-title"><button className="student-modal-close" type="button" aria-label="Fechar edição" disabled={savingActivityEdit} onClick={() => setEditingActivity(null)}><X size={18} /></button><span className="role-kicker">EDITAR ATIVIDADE</span><h2 id="edit-assignment-title">{editingActivity.title}</h2><form className="assignment-edit-form" onSubmit={salvarEdicaoAtividade}><label>Título<input value={editActivityTitle} onChange={(event) => setEditActivityTitle(event.target.value)} maxLength="180" required /></label><label>Instruções / Conteúdo<textarea value={editActivityDescription} onChange={(event) => setEditActivityDescription(event.target.value)} rows="5" /></label><div className="role-date-time-fields"><label>Data de entrega<input type="date" value={editActivityDate} onChange={(event) => setEditActivityDate(event.target.value)} /></label><label>Horário de entrega<input type="time" value={editActivityTime} onChange={(event) => setEditActivityTime(event.target.value)} /></label></div>{activityError && <p className="class-toast class-toast-error" role="alert">{activityError}</p>}<div className="teacher-activity-actions"><button className="teacher-activity-button secondary" type="button" disabled={savingActivityEdit} onClick={() => setEditingActivity(null)}>Cancelar</button><button className="teacher-activity-button primary" type="submit" disabled={savingActivityEdit}>{savingActivityEdit ? 'Salvando...' : 'Salvar alterações'}</button></div></form></section></div>}
+        {editingActivity && <div className="student-modal-backdrop assignment-edit-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !savingActivityEdit) setEditingActivity(null) }}><section className="student-performance-panel assignment-edit-panel" role="dialog" aria-modal="true" aria-labelledby="edit-assignment-title"><button className="student-modal-close" type="button" aria-label="Fechar edição" disabled={savingActivityEdit} onClick={() => setEditingActivity(null)}><X size={18} /></button><span className="role-kicker">EDITAR ATIVIDADE</span><h2 id="edit-assignment-title">{editingActivity.title}</h2><form className="assignment-edit-form" onSubmit={salvarEdicaoAtividade}><label>Título<input value={editActivityTitle} onChange={(event) => setEditActivityTitle(event.target.value)} maxLength="180" required /></label><label>Instruções / Conteúdo<textarea value={editActivityDescription} onChange={(event) => setEditActivityDescription(event.target.value)} rows="5" /></label><div className="role-date-time-fields"><label>Data de entrega<input type="text" value={editActivityDateText} inputMode="numeric" placeholder="DD/MM/AAAA" autoComplete="off" maxLength="10" pattern="\d{2}/\d{2}/\d{4}" title="Digite a data no formato DD/MM/AAAA" onChange={(event) => { const formattedDate = formatDatePtBrInput(event.target.value); setEditActivityDateText(formattedDate); setEditActivityDate(datePtBrToIso(formattedDate)) }} /></label><label>Horário de entrega<input type="time" value={editActivityTime} onChange={(event) => setEditActivityTime(event.target.value)} /></label></div>{activityError && <p className="class-toast class-toast-error" role="alert">{activityError}</p>}<div className="teacher-activity-actions"><button className="teacher-activity-button secondary" type="button" disabled={savingActivityEdit} onClick={() => setEditingActivity(null)}>Cancelar</button><button className="teacher-activity-button primary" type="submit" disabled={savingActivityEdit}>{savingActivityEdit ? 'Salvando...' : 'Salvar alterações'}</button></div></form></section></div>}
         {selectedAssignmentForSubmissions && <div className="student-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedAssignmentForSubmissions(null) }}><section className="student-performance-panel" role="dialog" aria-modal="true" aria-labelledby="assignment-submissions-title"><button className="student-modal-close" type="button" aria-label="Fechar entregas" onClick={() => setSelectedAssignmentForSubmissions(null)}>×</button><span className="role-kicker">ENTREGAS DA ATIVIDADE</span><h2 id="assignment-submissions-title">{selectedAssignmentForSubmissions.title}</h2>{submissionsLoading ? <p>Carregando entregas...</p> : submissionsError ? <p role="alert">{submissionsError}</p> : assignmentSubmissions.length ? <div className="teacher-submission-list">{assignmentSubmissions.map((submission) => <article className="teacher-submission-card submission-clickable" key={`${submission.assignment_id}-${submission.student_id}`} tabIndex={0} role="button" aria-label={`Ver entrega de ${submission.student?.name || 'Aluno'}`} onClick={() => setSelectedSubmission({ student: submission.student || { name: 'Aluno' }, submission })} onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); setSelectedSubmission({ student: submission.student || { name: 'Aluno' }, submission }) } }}><strong>{submission.student?.name || 'Aluno'}</strong>{submission.student?.email && <small>{submission.student.email}</small>}<small>Entregue em {formatarDataAluno(submission.submitted_at)}</small><SubmissionContent submission={submission} /></article>)}</div> : <p>Nenhuma entrega encontrada para esta atividade.</p>}</section></div>}
         {selectedSubmission && <div className="student-modal-backdrop submission-detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedSubmission(null) }}><section className="student-performance-panel submission-detail-modal" role="dialog" aria-modal="true" aria-labelledby="submission-detail-title"><button className="student-modal-close" type="button" aria-label="Fechar detalhes da entrega" onClick={() => setSelectedSubmission(null)}><X size={18} /></button><span className="role-kicker">DETALHES DA ENTREGA</span><h2 id="submission-detail-title">{selectedSubmission.student.name || 'Aluno'}</h2>{selectedSubmission.student.email && <p className="student-email">{selectedSubmission.student.email}</p>}<small>Entregue em {formatarDataAluno(selectedSubmission.submission.submitted_at)}</small><SubmissionContent submission={selectedSubmission.submission} /></section></div>}
       </section>
